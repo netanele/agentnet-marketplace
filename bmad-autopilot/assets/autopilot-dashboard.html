@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMAD Autopilot — Live Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── CSS Custom Properties ────────────────────────────── */
+:root {
+  --bg-primary: #0a0e17;
+  --bg-secondary: #111827;
+  --bg-card: rgba(17, 24, 39, 0.6);
+  --border-card: rgba(255, 255, 255, 0.08);
+  --text-primary: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --accent-cyan: #22d3ee;
+  --accent-green: #34d399;
+  --accent-red: #f87171;
+  --accent-orange: #fb923c;
+  --accent-purple: #a78bfa;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ── Reset & Base ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 14px; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(34, 211, 238, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(167, 139, 250, 0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Sticky Header ────────────────────────────────────── */
+#top-bar {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 24px;
+  background: rgba(10, 14, 23, 0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-card);
+  flex-wrap: wrap;
+}
+
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700; font-size: 1.1rem;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.logo-icon {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: #fff; font-weight: 700;
+}
+
+/* Sprint progress bar in header */
+.sprint-progress {
+  flex: 1; min-width: 120px; max-width: 320px;
+  display: flex; align-items: center; gap: 10px;
+}
+
+.progress-track {
+  flex: 1; height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px; overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+  transition: width 0.6s ease;
+}
+
+.progress-pct {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--accent-green);
+  min-width: 36px; text-align: right;
+}
+
+/* Header right cluster */
+.header-right {
+  display: flex; align-items: center; gap: 14px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.fetch-time {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.refresh-indicator {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.countdown-ring {
+  width: 18px; height: 18px;
+}
+
+.countdown-ring circle {
+  fill: none; stroke-width: 2;
+}
+
+.countdown-ring .track { stroke: rgba(255,255,255,0.08); }
+.countdown-ring .fill {
+  stroke: var(--accent-cyan);
+  stroke-dasharray: 44;
+  stroke-dashoffset: 44;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.countdown-ring.animating .fill {
+  animation: countdown-fill 15s linear infinite;
+}
+
+@keyframes countdown-fill {
+  from { stroke-dashoffset: 44; }
+  to { stroke-dashoffset: 0; }
+}
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-primary);
+  border-color: rgba(255,255,255,0.15);
+}
+
+
+
+/* ── Empty State / Drop Zone ──────────────────────────── */
+#empty-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: calc(100vh - 60px);
+  padding: 40px 24px;
+  position: relative; z-index: 1;
+}
+
+.drop-zone {
+  width: 100%; max-width: 520px;
+  padding: 56px 40px;
+  border: 2px dashed rgba(255,255,255,0.1);
+  border-radius: 16px;
+  text-align: center;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.drop-zone.drag-over {
+  border-color: var(--accent-cyan);
+  background: rgba(34, 211, 238, 0.05);
+}
+
+.drop-zone-icon {
+  font-size: 48px; margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.drop-zone h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.drop-zone p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.drop-zone .btn {
+  font-size: 0.85rem;
+  padding: 8px 20px;
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.drop-zone .btn:hover {
+  background: rgba(34, 211, 238, 0.1);
+}
+
+/* ── Dashboard Container ──────────────────────────────── */
+#dashboard {
+  display: none;
+  position: relative; z-index: 1;
+  padding: 20px 24px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Summary Strip ────────────────────────────────────── */
+#summary-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+  position: sticky;
+  top: 52px;
+  z-index: 90;
+  background: rgba(10, 14, 23, 0.92);
+  backdrop-filter: blur(16px);
+  padding: 12px 0;
+}
+
+.stat-card {
+  padding: 16px 18px;
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  animation: fade-in-up 0.4s ease both;
+}
+
+.stat-card .label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.stat-card .value {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stat-card .value .unit {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+.stat-card.active .value { color: var(--accent-cyan); }
+.stat-card.done .value { color: var(--accent-green); }
+.stat-card.fail .value { color: var(--accent-red); }
+
+/* ── Epic Card ────────────────────────────────────────── */
+.epic-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-card);
+  border-radius: 16px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  animation: fade-in-up 0.5s ease both;
+}
+
+.epic-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-card);
+  flex-wrap: wrap;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.epic-header:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.epic-chevron {
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+  color: var(--text-muted);
+}
+
+.epic-chevron svg { width: 14px; height: 14px; }
+
+.epic-card.expanded .epic-chevron {
+  transform: rotate(90deg);
+  color: var(--accent-cyan);
+}
+
+.epic-number {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.05);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.epic-key {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.epic-status {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.epic-status.backlog {
+  background: rgba(107, 114, 128, 0.15);
+  color: var(--text-muted);
+  border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+.epic-status.in-progress {
+  background: rgba(34, 211, 238, 0.1);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+}
+
+.epic-status.done {
+  background: rgba(52, 211, 153, 0.1);
+  color: var(--accent-green);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+}
+
+.epic-progress {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.epic-progress-ring {
+  width: 32px; height: 32px;
+  transform: rotate(-90deg);
+}
+
+.epic-progress-ring .track {
+  fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 3;
+}
+
+.epic-progress-ring .fill {
+  fill: none; stroke-width: 3; stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease;
+}
+
+.epic-progress-pct {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* ── Epic Body Collapse ──────────────────────────────── */
+.epic-body {
+  padding: 0 22px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.4s ease;
+}
+
+.epic-card.expanded .epic-body {
+  max-height: 5000px;
+  padding: 18px 22px;
+}
+
+.epic-card.expanded {
+  border-color: rgba(34, 211, 238, 0.15);
+}
+
+/* ── Story Accordion ─────────────────────────────────── */
+
+.accordion-item {
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  background: rgba(17, 24, 39, 0.4);
+  transition: border-color 0.3s ease;
+}
+
+.accordion-item:last-child { margin-bottom: 0; }
+
+.accordion-item.expanded {
+  border-color: rgba(34, 211, 238, 0.2);
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+  gap: 1rem;
+}
+
+.accordion-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.accordion-chevron {
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+  color: var(--text-muted);
+}
+
+.accordion-item.expanded .accordion-chevron {
+  transform: rotate(90deg);
+  color: var(--accent-cyan);
+}
+
+.accordion-chevron svg { width: 14px; height: 14px; }
+
+.header-story-name {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-shrink: 0;
+}
+
+.progress-bar-mini {
+  width: 80px; height: 6px;
+  background: rgba(107, 114, 128, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-mini-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-count {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  min-width: 30px;
+  text-align: right;
+}
+
+.header-active-step {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.header-active-step.has-active {
+  background: rgba(34, 211, 238, 0.12);
+  color: var(--accent-cyan);
+}
+
+.header-active-step.all-done {
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--accent-green);
+}
+
+.header-active-step.not-started {
+  background: rgba(107, 114, 128, 0.12);
+  color: var(--text-muted);
+}
+
+.header-active-step.has-fail {
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--accent-red);
+}
+
+/* Expandable body */
+.accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+
+.accordion-item.expanded .accordion-body {
+  max-height: 700px;
+}
+
+.stepper {
+  padding: 0.5rem 1rem 1.25rem 2.5rem;
+  position: relative;
+}
+
+.stepper::before {
+  content: '';
+  position: absolute;
+  left: 2.9rem;
+  top: 0.75rem;
+  bottom: 1.5rem;
+  width: 2px;
+  background: rgba(107, 114, 128, 0.2);
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+.step-circle {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.step-circle.done { background: var(--accent-green); }
+.step-circle.done svg {
+  width: 12px; height: 12px;
+  stroke: var(--bg-primary);
+  stroke-width: 3; fill: none;
+}
+
+.step-circle.active {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.15);
+  animation: circlePulse 2s ease-in-out infinite;
+}
+
+.step-circle.active::after {
+  content: '';
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--bg-primary);
+}
+
+.step-circle.pending {
+  background: transparent;
+  border: 2px solid var(--text-muted);
+}
+
+.step-circle.fail { background: var(--accent-red); }
+.step-circle.fail::after {
+  content: '\00d7';
+  color: var(--bg-primary);
+  font-size: 14px; font-weight: 700;
+}
+
+.step-circle.hang { background: var(--accent-orange); }
+.step-circle.hang::after {
+  content: '!';
+  color: var(--bg-primary);
+  font-size: 11px; font-weight: 700;
+}
+
+.step-info {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.step-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.step-label.done { color: var(--accent-green); }
+.step-label.active { color: var(--accent-cyan); font-weight: 600; }
+.step-label.pending { color: var(--text-muted); }
+.step-label.fail { color: var(--accent-red); }
+.step-label.hang { color: var(--accent-orange); }
+
+.step-timestamp {
+  font-size: 0.675rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+@keyframes circlePulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.15); }
+  50% { box-shadow: 0 0 0 8px rgba(34, 211, 238, 0.08); }
+}
+
+/* ── Retrospective Row ────────────────────────────────── */
+.retro-row {
+  display: flex; align-items: center; gap: 10px;
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid var(--border-card);
+}
+
+.retro-diamond {
+  width: 18px; height: 18px;
+  transform: rotate(45deg);
+  border: 2px solid;
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.retro-diamond.pending {
+  border-color: rgba(107, 114, 128, 0.3);
+  background: transparent;
+}
+
+.retro-diamond.active {
+  border-color: var(--accent-cyan);
+  background: rgba(34, 211, 238, 0.12);
+  animation: pulse-active 2s ease-in-out infinite;
+}
+
+.retro-diamond.done {
+  border-color: var(--accent-green);
+  background: rgba(52, 211, 153, 0.12);
+}
+
+.retro-diamond.fail {
+  border-color: var(--accent-red);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.retro-diamond.hang {
+  border-color: var(--accent-orange);
+  background: rgba(251, 146, 60, 0.12);
+}
+
+/* Epic Test Design row — same look as retro-row but anchored at top of body */
+.etd-row {
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border-card);
+}
+
+.retro-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.retro-status {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+/* ── Toast ────────────────────────────────────────────── */
+#toast-container {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  z-index: 200;
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.toast {
+  padding: 10px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-card);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  backdrop-filter: blur(12px);
+  animation: fade-in-up 0.3s ease;
+  max-width: 360px;
+}
+
+.toast.error {
+  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--accent-red);
+}
+
+.toast.warn {
+  border-color: rgba(251, 146, 60, 0.3);
+  color: var(--accent-orange);
+}
+
+/* ── Animations ───────────────────────────────────────── */
+@keyframes pulse-active {
+  0%, 100% { box-shadow: 0 0 8px rgba(34, 211, 238, 0.2), 0 0 2px rgba(34, 211, 238, 0.1); }
+  50% { box-shadow: 0 0 18px rgba(34, 211, 238, 0.4), 0 0 6px rgba(34, 211, 238, 0.25); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Stale-File Banner ────────────────────────────────── */
+#stale-banner {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 24px;
+  background: rgba(251, 146, 60, 0.1);
+  border-bottom: 1px solid rgba(251, 146, 60, 0.3);
+  color: var(--accent-orange);
+  font-size: 0.82rem;
+}
+
+/* ── Drag-Drop Overlay ────────────────────────────────── */
+#drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(10, 14, 23, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drop-overlay-content {
+  text-align: center;
+  padding: 48px 40px;
+  border: 2px dashed rgba(34, 211, 238, 0.3);
+  border-radius: 20px;
+  max-width: 480px;
+  width: 90%;
+  background: rgba(17, 24, 39, 0.6);
+  animation: fade-in-up 0.3s ease;
+}
+
+.drop-overlay-content.drag-over {
+  border-color: var(--accent-cyan);
+  background: rgba(34, 211, 238, 0.08);
+}
+
+.drop-overlay-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.drop-overlay-content h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.drop-overlay-content p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.drop-overlay-content .btn {
+  border-color: var(--text-muted);
+  color: var(--text-secondary);
+}
+
+/* ── Toast info type ─────────────────────────────────── */
+.toast.info {
+  border-color: rgba(34, 211, 238, 0.3);
+  color: var(--accent-cyan);
+}
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 640px) {
+  #top-bar { padding: 10px 14px; gap: 10px; }
+  #dashboard { padding: 14px 12px 30px; }
+  .epic-header { padding: 14px 16px; }
+  .epic-body { padding: 14px 16px; }
+  .sprint-progress { max-width: 160px; }
+  .progress-bar-mini { display: none; }
+  .header-active-step { font-size: 0.65rem; }
+  .accordion-header { gap: 0.5rem; padding: 0.75rem 0.75rem; }
+  .stepper { padding-left: 1.5rem; }
+  .stepper::before { left: 1.9rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Hidden file input ──────────────────────────────── -->
+<input type="file" id="file-input" accept=".md,.markdown,.txt" hidden>
+
+<!-- ── Header ─────────────────────────────────────────── -->
+<header id="top-bar">
+  <div class="logo">
+    <div class="logo-icon">B</div>
+    <span>BMAD Autopilot</span>
+  </div>
+
+  <div class="sprint-progress" id="sprint-progress" style="display:none">
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <span class="progress-pct" id="progress-pct">0%</span>
+  </div>
+
+  <div class="header-right">
+    <span class="fetch-time" id="fetch-time"></span>
+    <div class="refresh-indicator" id="refresh-indicator" style="display:none">
+      <svg class="countdown-ring" id="countdown-ring" viewBox="0 0 18 18">
+        <circle class="track" cx="9" cy="9" r="7"/>
+        <circle class="fill" cx="9" cy="9" r="7"/>
+      </svg>
+      <span>Auto-refresh</span>
+    </div>
+    <button class="btn" id="btn-load">Load Trace File</button>
+  </div>
+</header>
+
+<!-- ── Empty State ────────────────────────────────────── -->
+<div id="empty-state">
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-zone-icon">📄</div>
+    <h2>Load a phase4-trace.md file</h2>
+    <p>Drag &amp; drop your trace file here, or click to browse.<br>
+    The dashboard auto-refreshes every 5 seconds.</p>
+    <button class="btn" id="btn-browse">Browse Files</button>
+  </div>
+</div>
+
+<!-- ── Stale-File Banner ──────────────────────────────── -->
+<div id="stale-banner">
+  <span>Auto-refresh paused — file snapshot is frozen. Drag &amp; drop the file to enable live updates.</span>
+  <button class="btn" id="btn-reselect">Re-select File</button>
+</div>
+
+<!-- ── Drag-Drop Overlay (Safari live-refresh upgrade) ── -->
+<div id="drop-overlay" style="display:none">
+  <div class="drop-overlay-content">
+    <div class="drop-overlay-icon">📂</div>
+    <h2>Drop your trace file here</h2>
+    <p>Drag &amp; drop enables live auto-refresh in Safari.<br>
+    Drop the same file you loaded to upgrade to live updates.</p>
+    <button class="btn" id="btn-cancel-overlay">Cancel</button>
+  </div>
+</div>
+
+<!-- ── Dashboard ──────────────────────────────────────── -->
+<div id="dashboard">
+  <div id="summary-strip"></div>
+  <div id="epic-container"></div>
+</div>
+
+<!-- ── Toasts ─────────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<script>
+/* ================================================================
+   BMAD Autopilot — Live Status Dashboard
+   Single-file vanilla JS implementation
+   ================================================================ */
+
+// ── Step definitions (mode-aware) ─────────────────────────
+const TEA_STEPS = ['create','validate','atdd','dev','review','automate','test-review','nfr','trace','commit'];
+const QA_STEPS  = ['create','validate','dev','review','qa-e2e','commit'];
+
+const TEA_STEP_LABELS = {
+  'create':'Create Story','validate':'Validate Story','atdd':'ATDD Tests',
+  'dev':'Development','review':'Code Review','automate':'Test Automation',
+  'test-review':'Test Review','nfr':'NFR Assessment','trace':'Traceability',
+  'commit':'Commit & Push'
+};
+const QA_STEP_LABELS = {
+  'create':'Create Story','validate':'Validate Story',
+  'dev':'Development','review':'Code Review','qa-e2e':'QA E2E Tests',
+  'commit':'Commit & Push'
+};
+
+function getStepDefs(mode) {
+  if (mode === 'qa') return { steps: QA_STEPS, labels: QA_STEP_LABELS };
+  return { steps: TEA_STEPS, labels: TEA_STEP_LABELS };
+}
+
+const STATUS_MAP = { '-':'pending', '>>':'active', 'DONE':'done', 'FAIL':'fail', 'HANG':'hang' };
+
+// ── State ─────────────────────────────────────────────────
+const state = {
+  file: null,       // File object (snapshot) — legacy fallback
+  fileHandle: null,  // FileSystemFileHandle — enables live re-reads
+  fileEntry: null,   // FileEntry — older API fallback for file:// re-reads
+  lastContent: null,
+  lastFetchTime: null,
+  refreshTimer: null,
+  data: null,
+  consecutiveErrors: 0,
+  _safariTipShown: false
+};
+
+// ── DOM refs ──────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const fileInput = $('file-input');
+const emptyState = $('empty-state');
+const dashboard = $('dashboard');
+const summaryStrip = $('summary-strip');
+const epicContainer = $('epic-container');
+const btnLoad = $('btn-load');
+
+const btnBrowse = $('btn-browse');
+const dropZone = $('drop-zone');
+const fetchTimeEl = $('fetch-time');
+const progressFill = $('progress-fill');
+const progressPct = $('progress-pct');
+const sprintProgress = $('sprint-progress');
+const refreshIndicator = $('refresh-indicator');
+const countdownRing = $('countdown-ring');
+const toastContainer = $('toast-container');
+
+// ── File Handling ─────────────────────────────────────────
+
+let lastDirHandle = null;
+
+async function openFilePicker() {
+  // Prefer File System Access API — gives us a handle that re-reads from disk
+  if (window.showOpenFilePicker) {
+    try {
+      const opts = {
+        types: [{ description: 'Markdown', accept: { 'text/markdown': ['.md'] } }],
+        multiple: false
+      };
+      if (lastDirHandle) opts.startIn = lastDirHandle;
+      const [handle] = await window.showOpenFilePicker(opts);
+      // Remember the parent directory for next time
+      try { lastDirHandle = await handle.getParent(); } catch (_) {}
+      const file = await handle.getFile();
+      handleFileSelect(file, handle);
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return; // user cancelled
+      // fall through to legacy input
+    }
+  }
+  // Safari: if already showing data and no live handle, prompt drag-drop for FileEntry
+  if (state.data && !state.fileHandle && !state.fileEntry) {
+    showDropOverlay();
+    return;
+  }
+  fileInput.click();
+}
+
+function initFileHandling() {
+  btnLoad.addEventListener('click', openFilePicker);
+  btnBrowse.addEventListener('click', e => { e.stopPropagation(); openFilePicker(); });
+  dropZone.addEventListener('click', openFilePicker);
+
+  fileInput.addEventListener('change', e => {
+    if (e.target.files.length) {
+      // Try to get a FileEntry via webkitEntries — enables live re-reads in Safari
+      let entry = null;
+      if (fileInput.webkitEntries && fileInput.webkitEntries.length) {
+        entry = fileInput.webkitEntries[0];
+      }
+      handleFileSelect(e.target.files[0], null, entry);
+    }
+  });
+
+  // Drag & drop — try to obtain a FileSystemFileHandle for live re-reads
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleDrop(e); });
+
+  // Also allow drop on the whole body when dashboard is visible
+  document.body.addEventListener('dragover', e => e.preventDefault());
+  document.body.addEventListener('drop', e => { e.preventDefault(); handleDrop(e); });
+
+
+  // Stale-file banner: let user re-acquire a fresh file handle
+  $('btn-reselect').addEventListener('click', openFilePicker);
+}
+
+async function handleDrop(e) {
+  const item = e.dataTransfer.items && e.dataTransfer.items[0];
+  const fallbackFile = e.dataTransfer.files[0];
+
+  // Capture FileEntry synchronously — DataTransferItem is invalidated after await
+  let entry = null;
+  if (item) {
+    const getEntry = item.getAsEntry || item.webkitGetAsEntry;
+    if (getEntry) {
+      entry = getEntry.call(item);
+      if (entry && !entry.isFile) entry = null;
+    }
+  }
+
+  let handle = null;
+  if (item && item.getAsFileSystemHandle) {
+    try {
+      handle = await item.getAsFileSystemHandle();
+    } catch (err) {
+      console.warn('getAsFileSystemHandle() failed:', err);
+    }
+  }
+
+  const file = handle ? await handle.getFile()
+             : entry  ? await readFileFromEntry(entry)
+             : fallbackFile;
+  if (file) handleFileSelect(file, handle, entry);
+}
+
+function handleFileSelect(file, handle, entry) {
+  state.file = file;
+  state.fileHandle = handle || null;
+  state.fileEntry = entry || null;
+  state.lastContent = null;
+  state.consecutiveErrors = 0;
+  state._safariTipShown = false;
+  hideStaleFileBanner();
+  readAndParse();
+  startAutoRefresh();
+}
+
+function readFileFromEntry(entry) {
+  return new Promise((resolve, reject) => {
+    entry.file(resolve, reject);
+  });
+}
+
+async function readAndParse() {
+  if (!state.file && !state.fileHandle) return;
+  try {
+    // Get a fresh File from the best available source
+    if (state.fileHandle) {
+      state.file = await state.fileHandle.getFile();
+    } else if (state.fileEntry) {
+      try {
+        state.file = await readFileFromEntry(state.fileEntry);
+      } catch (_) {
+        state.fileEntry = null;
+        throw _;
+      }
+    }
+    const content = await state.file.text();
+    state.lastFetchTime = new Date();
+    updateFetchTime();
+
+    if (content === state.lastContent) {
+      if (!state.fileHandle && !state.fileEntry) {
+        showStaleFileBanner();
+      }
+      restartCountdown();
+      return;
+    }
+
+    state.lastContent = content;
+    state.consecutiveErrors = 0;
+    hideStaleFileBanner();
+
+    // Safari tip: if no live handle, show one-time hint about drag & drop
+    if (!state.fileHandle && !state.fileEntry && !state._safariTipShown) {
+      state._safariTipShown = true;
+      showToast('For live auto-refresh in Safari, drag & drop the file onto this page', 'info');
+    }
+
+    const data = parseMarkdown(content);
+
+    if (!data) {
+      showToast('No Status Dashboard section found in file.', 'warn');
+      showWaiting();
+      restartCountdown();
+      return;
+    }
+
+    state.data = data;
+    render(data);
+    restartCountdown();
+  } catch (err) {
+    state.consecutiveErrors++;
+    console.error(`File read error (attempt ${state.consecutiveErrors}):`, err);
+
+    // NEVER stop polling — always keep the interval alive
+    if (!state.fileHandle && !state.fileEntry) {
+      // No handle or entry — File snapshot is stale; show persistent banner
+      showStaleFileBanner();
+    } else if (state.consecutiveErrors >= 3) {
+      // Has handle but repeated failures — transient issue, warn once
+      showToast('Read failed — retrying…', 'warn');
+    }
+    restartCountdown();
+  }
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  refreshIndicator.style.display = 'flex';
+  restartCountdown();
+  state.refreshTimer = setInterval(() => { readAndParse(); restartCountdown(); }, 15000);
+}
+
+function stopAutoRefresh() {
+  if (state.refreshTimer) clearInterval(state.refreshTimer);
+  state.refreshTimer = null;
+  refreshIndicator.style.display = 'none';
+}
+
+function restartCountdown() {
+  countdownRing.classList.remove('animating');
+  void countdownRing.offsetWidth; // force reflow
+  countdownRing.classList.add('animating');
+}
+
+function updateFetchTime() {
+  if (!state.lastFetchTime) return;
+  fetchTimeEl.textContent = 'Last fetch: ' + formatTime(state.lastFetchTime);
+}
+
+// ── Parsing ───────────────────────────────────────────────
+
+function parseMarkdown(content) {
+  const section = extractDashboardSection(content);
+  if (!section) return null;
+
+  // Detect quality mode from trace file header (before Status Dashboard section)
+  const modeMatch = content.match(/\*\*Quality Mode:\*\*\s*(\S+)/i);
+  const qualityMode = (modeMatch && modeMatch[1].toLowerCase() === 'qa') ? 'qa' : 'tea';
+
+  const data = {
+    lastUpdated: null,
+    qualityMode,
+    epics: []
+  };
+
+  // Extract last updated
+  const tsMatch = section.match(/\*\*Last updated:\*\*\s*(.+)/);
+  if (tsMatch) data.lastUpdated = tsMatch[1].trim();
+
+  // Split into epic blocks
+  const epicBlocks = section.split(/(?=###\s+Epic\s+\d+)/);
+
+  for (const block of epicBlocks) {
+    const headerMatch = block.match(/###\s+Epic\s+(\d+):\s*(\S+)(?:\s+\([^)]*\))?\s+—\s*(\S+)\s*$/m);
+    if (!headerMatch) continue;
+
+    const epic = {
+      number: parseInt(headerMatch[1]),
+      key: headerMatch[2],
+      status: headerMatch[3],
+      stories: [],
+      epicTestDesign: 'pending',
+      retrospective: 'pending'
+    };
+
+    // Parse stories table
+    epic.stories = parseStoriesTable(block, qualityMode);
+
+    // Parse epic test design (per-epic prelude)
+    const etdMatch = block.match(/\*\*Epic Test Design:\*\*\s*(\S+)/);
+    if (etdMatch) epic.epicTestDesign = etdMatch[1].trim();
+
+    // Parse retrospective
+    const retroMatch = block.match(/\*\*Retrospective:\*\*\s*(\S+)/);
+    if (retroMatch) epic.retrospective = retroMatch[1].trim();
+
+    data.epics.push(epic);
+  }
+
+  return data;
+}
+
+function extractDashboardSection(content) {
+  // Match from "## Status Dashboard" to the next "## " heading or "---" divider before "## Execution Log"
+  const match = content.match(/## Status Dashboard\s*\n([\s\S]*?)(?=\n## (?!Status Dashboard)|---\s*\n+## |$)/);
+  return match ? match[0] : null;
+}
+
+function parseStoriesTable(block, qualityMode) {
+  const { steps: STEPS } = getStepDefs(qualityMode);
+  const stories = [];
+  const lines = block.split('\n');
+  let inTable = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Detect table header
+    if (trimmed.startsWith('| Story')) {
+      inTable = true;
+      continue;
+    }
+
+    // Skip separator
+    if (inTable && trimmed.match(/^\|[\s-|]+\|$/)) continue;
+
+    // Parse data row
+    if (inTable && trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      const cells = trimmed.split('|').map(c => c.trim()).filter(c => c !== '');
+      if (cells.length < 2) continue;
+
+      const storyName = cells[0];
+      const steps = {};
+
+      STEPS.forEach((step, i) => {
+        const raw = (cells[i + 1] || '-').trim();
+        steps[step] = STATUS_MAP[raw] || 'pending';
+        if (!STATUS_MAP[raw] && raw !== '-') {
+          console.warn(`Unknown status "${raw}" for ${storyName}/${step}, treating as pending`);
+        }
+      });
+
+      stories.push({ name: storyName, steps });
+    } else if (inTable && trimmed !== '' && !trimmed.startsWith('|')) {
+      inTable = false;
+    }
+  }
+
+  return stories;
+}
+
+// ── Rendering ─────────────────────────────────────────────
+
+function render(data) {
+  emptyState.style.display = 'none';
+  dashboard.style.display = 'block';
+  sprintProgress.style.display = 'flex';
+
+  renderSummaryStrip(data);
+  renderEpics(data);
+  updateSprintProgress(data);
+}
+
+function showWaiting() {
+  emptyState.style.display = 'none';
+  dashboard.style.display = 'block';
+  sprintProgress.style.display = 'none';
+  summaryStrip.innerHTML = '';
+  epicContainer.innerHTML = `
+    <div class="epic-card" style="text-align:center;padding:40px;">
+      <p style="color:var(--text-muted);font-size:0.9rem;">Waiting for Status Dashboard data...</p>
+      <p style="color:var(--text-muted);font-size:0.75rem;margin-top:8px;">
+        The file will be re-read every 15 seconds.
+      </p>
+    </div>`;
+}
+
+function computeStats(data) {
+  const { steps: STEPS } = getStepDefs(data.qualityMode);
+  let totalSteps = 0, doneSteps = 0, activeSteps = 0, failSteps = 0;
+  let totalStories = 0, doneStories = 0;
+  let activeStepName = null;
+
+  for (const epic of data.epics) {
+    for (const story of epic.stories) {
+      totalStories++;
+      let storyDone = true;
+      for (const step of STEPS) {
+        totalSteps++;
+        const s = story.steps[step];
+        if (s === 'done') doneSteps++;
+        else if (s === 'active') { activeSteps++; activeStepName = `${story.name} / ${step}`; storyDone = false; }
+        else if (s === 'fail') { failSteps++; storyDone = false; }
+        else storyDone = false;
+      }
+      if (storyDone) doneStories++;
+    }
+  }
+
+  const pct = totalSteps > 0 ? Math.round((doneSteps / totalSteps) * 100) : 0;
+  return { totalSteps, doneSteps, activeSteps, failSteps, totalStories, doneStories, pct, activeStepName, totalEpics: data.epics.length };
+}
+
+function renderSummaryStrip(data) {
+  const s = computeStats(data);
+  summaryStrip.innerHTML = '';
+
+  const cards = [
+    { label: 'Epics', value: s.totalEpics, cls: '' },
+    { label: 'Stories Done', value: `${s.doneStories}<span class="unit">/ ${s.totalStories}</span>`, cls: 'done' },
+    { label: 'Steps Complete', value: `${s.doneSteps}<span class="unit">/ ${s.totalSteps}</span>`, cls: 'done' },
+    { label: 'Active', value: s.activeSteps, cls: 'active' },
+  ];
+
+  if (s.failSteps > 0) {
+    cards.push({ label: 'Failed', value: s.failSteps, cls: 'fail' });
+  }
+
+  cards.forEach((c, i) => {
+    const el = document.createElement('div');
+    el.className = `stat-card ${c.cls}`;
+    el.style.animationDelay = `${i * 0.06}s`;
+    el.innerHTML = `<div class="label">${c.label}</div><div class="value">${c.value}</div>`;
+    summaryStrip.appendChild(el);
+  });
+}
+
+function updateSprintProgress(data) {
+  const s = computeStats(data);
+  progressFill.style.width = s.pct + '%';
+  progressPct.textContent = s.pct + '%';
+}
+
+function renderEpics(data) {
+  epicContainer.innerHTML = '';
+  const { qualityMode } = data;
+  data.epics.forEach((epic, i) => {
+    const card = document.createElement('div');
+    const isDone = epic.status.toLowerCase() === 'done';
+    card.className = isDone ? 'epic-card' : 'epic-card expanded';
+    card.style.animationDelay = `${i * 0.08}s`;
+    card.innerHTML = renderEpicCard(epic, qualityMode);
+    epicContainer.appendChild(card);
+  });
+
+  // Attach epic-level expand/collapse handlers
+  epicContainer.querySelectorAll('.epic-header').forEach(header => {
+    header.addEventListener('click', () => {
+      header.closest('.epic-card').classList.toggle('expanded');
+    });
+  });
+
+  // Attach story accordion expand/collapse handlers
+  epicContainer.querySelectorAll('.accordion-header').forEach(header => {
+    header.addEventListener('click', () => {
+      header.parentElement.classList.toggle('expanded');
+    });
+  });
+}
+
+function renderEpicCard(epic, qualityMode) {
+  const epicPct = computeEpicPct(epic, qualityMode);
+  const circumference = 2 * Math.PI * 12;
+  const offset = circumference - (epicPct / 100) * circumference;
+  const statusClass = epic.status.replace(/\s+/g, '-');
+
+  // Pick ring color
+  let ringStroke = 'var(--text-muted)';
+  if (statusClass === 'in-progress') ringStroke = 'var(--accent-cyan)';
+  else if (statusClass === 'done') ringStroke = 'var(--accent-green)';
+
+  let html = `
+    <div class="epic-header">
+      <div class="epic-chevron">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+      <span class="epic-number">Epic ${epic.number}</span>
+      <span class="epic-key">${escHtml(epic.key)}</span>
+      <span class="epic-status ${statusClass}">${escHtml(epic.status)}</span>
+      <div class="epic-progress">
+        <svg class="epic-progress-ring" viewBox="0 0 32 32">
+          <circle class="track" cx="16" cy="16" r="12"/>
+          <circle class="fill" cx="16" cy="16" r="12"
+            stroke="${ringStroke}"
+            stroke-dasharray="${circumference}"
+            stroke-dashoffset="${offset}"/>
+        </svg>
+        <span class="epic-progress-pct">${epicPct}%</span>
+      </div>
+    </div>
+    <div class="epic-body">`;
+
+  // Epic Test Design (TEA mode only — no epic prelude in QA mode)
+  if (qualityMode !== 'qa') {
+    const etdRaw = epic.epicTestDesign;
+    const etdStatus = STATUS_MAP[etdRaw] || 'pending';
+    const etdLabel = etdRaw === '>>' ? 'In Progress' : etdRaw;
+    const etdColor = etdStatus === 'done' ? '--accent-green'
+                   : etdStatus === 'active' ? '--accent-cyan'
+                   : etdStatus === 'fail' ? '--accent-red'
+                   : etdStatus === 'hang' ? '--accent-orange'
+                   : '--text-muted';
+    html += `
+    <div class="etd-row">
+      <div class="retro-diamond ${etdStatus}"></div>
+      <span class="retro-label">Epic Test Design:</span>
+      <span class="retro-status" style="color:var(${etdColor})">${escHtml(etdLabel)}</span>
+    </div>`;
+  }
+
+  for (const story of epic.stories) {
+    html += renderStoryPipeline(story, qualityMode);
+  }
+
+  // Retrospective
+  const retroStatus = epic.retrospective === '>>' ? 'active' : (epic.retrospective === 'DONE' ? 'done' : 'pending');
+  const retroLabel = epic.retrospective === '>>' ? 'In Progress' : epic.retrospective;
+  html += `
+    <div class="retro-row">
+      <div class="retro-diamond ${retroStatus}"></div>
+      <span class="retro-label">Retrospective:</span>
+      <span class="retro-status" style="color:var(${retroStatus === 'done' ? '--accent-green' : retroStatus === 'active' ? '--accent-cyan' : '--text-muted'})">${escHtml(retroLabel)}</span>
+    </div>`;
+
+  html += '</div>';
+  return html;
+}
+
+function renderStoryPipeline(story, qualityMode) {
+  const { steps: STEPS, labels: STEP_LABELS } = getStepDefs(qualityMode);
+  // Compute story stats
+  let doneCount = 0, activeStep = null, allDone = true, hasFail = false;
+  STEPS.forEach(step => {
+    const s = story.steps[step];
+    if (s === 'done') doneCount++;
+    else allDone = false;
+    if (s === 'active') activeStep = STEP_LABELS[step] || step;
+    if (s === 'fail' || s === 'hang') hasFail = true;
+  });
+  const total = STEPS.length;
+  const pct = Math.round((doneCount / total) * 100);
+  const hasActive = !!activeStep;
+  const expanded = hasActive ? ' expanded' : '';
+
+  // Progress bar color
+  let barColor = 'var(--text-muted)';
+  if (allDone) barColor = 'var(--accent-green)';
+  else if (hasActive) barColor = 'linear-gradient(90deg, var(--accent-green), var(--accent-cyan))';
+
+  // Active-step badge
+  let badgeClass, badgeText;
+  if (allDone) { badgeClass = 'all-done'; badgeText = 'Complete'; }
+  else if (hasActive) { badgeClass = 'has-active'; badgeText = activeStep; }
+  else if (hasFail) { badgeClass = 'has-fail'; badgeText = 'Blocked'; }
+  else { badgeClass = 'not-started'; badgeText = 'Queued'; }
+
+  // Header
+  let html = `<div class="accordion-item${expanded}">
+    <div class="accordion-header">
+      <div class="accordion-chevron">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+      </div>
+      <div class="header-story-name">${escHtml(story.name)}</div>
+      <div class="header-progress">
+        <div class="progress-bar-mini">
+          <div class="progress-bar-mini-fill" style="width:${pct}%;background:${barColor}"></div>
+        </div>
+        <div class="progress-count">${doneCount}/${total}</div>
+      </div>
+      <div class="header-active-step ${badgeClass}">${escHtml(badgeText)}</div>
+    </div>
+    <div class="accordion-body">
+      <div class="stepper">`;
+
+  // Stepper steps
+  STEPS.forEach(step => {
+    const status = story.steps[step];
+    const label = STEP_LABELS[step] || step;
+    let circleInner = '';
+    if (status === 'done') {
+      circleInner = '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>';
+    }
+    html += `
+        <div class="step-item">
+          <div class="step-circle ${status}">${circleInner}</div>
+          <div class="step-info">
+            <div class="step-label ${status}">${escHtml(label)}</div>
+            <div class="step-timestamp">${status === 'active' ? 'in progress…' : ''}</div>
+          </div>
+        </div>`;
+  });
+
+  html += `
+      </div>
+    </div>
+  </div>`;
+  return html;
+}
+
+function computeEpicPct(epic, qualityMode) {
+  const { steps: STEPS } = getStepDefs(qualityMode);
+  const total = epic.stories.length * STEPS.length;
+  if (total === 0) return 0;
+  let done = 0;
+  for (const story of epic.stories) {
+    for (const step of STEPS) {
+      if (story.steps[step] === 'done') done++;
+    }
+  }
+  return Math.round((done / total) * 100);
+}
+
+
+// ── Utilities ─────────────────────────────────────────────
+
+function formatTime(date) {
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function showStaleFileBanner() {
+  $('stale-banner').style.display = 'flex';
+}
+
+function hideStaleFileBanner() {
+  $('stale-banner').style.display = 'none';
+}
+
+function showToast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  toastContainer.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 4000);
+}
+
+// ── Drop Overlay (Safari live-refresh upgrade) ───────────
+
+function showDropOverlay() {
+  const overlay = $('drop-overlay');
+  overlay.style.display = 'flex';
+}
+
+function hideDropOverlay() {
+  const overlay = $('drop-overlay');
+  overlay.style.display = 'none';
+  const content = overlay.querySelector('.drop-overlay-content');
+  if (content) content.classList.remove('drag-over');
+}
+
+function initDropOverlay() {
+  const overlay = $('drop-overlay');
+  const content = overlay.querySelector('.drop-overlay-content');
+
+  $('btn-cancel-overlay').addEventListener('click', hideDropOverlay);
+
+  overlay.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (content) content.classList.add('drag-over');
+  });
+
+  overlay.addEventListener('dragleave', e => {
+    // Only react when leaving the overlay itself
+    if (e.target === overlay) {
+      if (content) content.classList.remove('drag-over');
+    }
+  });
+
+  overlay.addEventListener('drop', e => {
+    e.preventDefault();
+    hideDropOverlay();
+    handleDrop(e);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────
+initFileHandling();
+initDropOverlay();
+</script>
+</body>
+</html>
