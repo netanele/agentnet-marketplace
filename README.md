@@ -1,4 +1,4 @@
-# agentnet-marketplace
+# AgentNet - Marketplace
 
 Internal AgentNet marketplace of [Claude Code](https://code.claude.com) plugins — skills the team
 ships to every repo.
