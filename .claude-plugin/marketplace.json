@@ -11,13 +11,6 @@
       "description": "Autonomous orchestration of plan and execute via claude code Agent Teams.",
       "category": "workflow",
       "tags": ["claude code", "agent teams", "orchestration"]
-    },
-    {
-      "name": "bmad-autopilot",
-      "source": "./bmad-autopilot",
-      "description": "Autonomous BMAD Phase-4 story-cycle orchestration via claude code Agent Teams.",
-      "category": "workflow",
-      "tags": ["claude code", "agent teams", "bmad", "orchestration"]
     }
   ]
 }
