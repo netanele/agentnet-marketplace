@@ -6,8 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `agentnet-marketplace` is a **Claude Code plugin marketplace** — not an application. It has no
 build, lint, or test tooling; its "source code" is Markdown skill definitions consumed by Claude
-Code itself. The repo currently ships two plugins, both of which orchestrate multi-agent work via
-the `Agent`/`SendMessage`/`TaskStop` tools rather than executing anything themselves.
+Code itself. The repo currently registers one plugin (`planex`) in the marketplace manifest, which
+orchestrates multi-agent work via the `Agent`/`SendMessage`/`TaskStop` tools rather than executing
+anything itself. A second plugin, `bmad-autopilot`, still lives in the repo but is unregistered
+from the marketplace (see below).
 
 ## Structure
 
@@ -26,7 +28,11 @@ There is no shared code between plugins; each is self-contained under its own to
 
 ## The plugins
 
-### `bmad-autopilot`
+### `bmad-autopilot` (unregistered — not currently in the marketplace)
+
+Removed from `.claude-plugin/marketplace.json` because it's not currently relevant; the plugin
+directory and its instructions are left intact in case it's re-registered later. Do not treat it
+as installable via this marketplace unless its entry is restored.
 
 Autonomous orchestrator for the BMAD Phase-4 story-implementation cycle. Assumes
 `/bmad-sprint-planning` and `/bmad-sprint-status` already ran. Acts as a lead agent that asks

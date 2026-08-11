@@ -39,32 +39,6 @@ opus code-review + security-review pass before cutover.
 - Interrupted or crashed runs resume cleanly: re-run `/planex docs/implementations/<slug>/plan.md`
   and Claude reconciles the branch/worktree/tracker state before continuing.
 
-### `bmad-autopilot`
-
-Autonomous orchestrator for the [BMAD](https://github.com/bmad-code-org/BMAD-METHOD) Phase-4
-story-implementation cycle. Once you've run `/bmad-sprint-planning` and `/bmad-sprint-status` in a
-project, this skill takes over completely: it drives every epic and every story to done using
-background teammate agents, asking you only **one** question up front.
-
-**Usage**
-
-```
-/bmad-autopilot
-```
-
-- Assumes BMAD sprint planning has already produced a `sprint-status.yaml` and story backlog.
-- At startup, asks you to choose the quality-assurance mode:
-  - **TEA** — full Test Architect path (epic-level test design plus per-story ATDD, automate,
-    test-review, NFR, and trace).
-  - **QA** — Quinn's `bmad-qa-generate-e2e-tests` run after code-review.
-- After that, it runs fully autonomously — no further questions — spawning one teammate agent at
-  a time to execute each workflow step, until every epic in the backlog is done.
-- Produces a running, auditable log at `{project-root}/BMAD-Autopilot/phase4-trace.md`. On first
-  run it also drops `BMAD-Autopilot/autopilot-dashboard.html` next to it — open that file in a
-  browser and drop the trace file onto it for a visual run dashboard.
-- Safe to resume: re-invoking the skill picks up from the trace log and `sprint-status.yaml`
-  where it left off.
-
 ## Installing this marketplace
 
 Inside Claude Code, add this repo as a plugin marketplace:
@@ -77,7 +51,6 @@ Then install whichever plugin(s) you want:
 
 ```
 /plugin install planex@agentnet-marketplace
-/plugin install bmad-autopilot@agentnet-marketplace
 ```
 
 Plugins normally activate immediately. If a plugin doesn't show up as available, run
