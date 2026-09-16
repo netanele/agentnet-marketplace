@@ -49,6 +49,10 @@ Syntax spans: `.k` key/identifier · `.s` string · `.c` comment · `.w` keyword
 
 `<pre>` must start at column 0 in the HTML source — indentation inside `<pre>` is rendered.
 
+`.prose` is a **container** class — a `<div>` holding several paragraphs, stacked with `gap`. On a
+single `<p>` the base file resets it to `display:block`; without that reset every inline `<code>`
+becomes its own flex item and the sentence shatters into one word per line.
+
 ## Panel grid
 
 For 2–4 mutually exclusive modes, or for short "facts worth their own box". `.sig` is a monospace

@@ -49,16 +49,36 @@ that already ships this?"). Otherwise assume: experienced engineer, English, sin
 ### 2. Verify before you write — always
 
 Facts on a page get repeated by whoever reads it, so shipping a plausible-but-wrong field name is
-the worst failure mode this skill has. Before writing any section, gather primary sources:
+the worst failure mode this skill has. Before writing any section, gather primary sources.
 
-- **Spawn verification agents in parallel** (one per topic cluster) against official docs, and use
-  the doc-fetching MCP if one is configured. Ask for *exact field names, exact payload shapes,
-  version numbers and limits*, and explicitly ask them to mark anything they could not confirm.
+**Spawn one verification agent per topic** (not per sub-question), in parallel, and give each the
+same four instructions — the first one matters most:
+
+1. **"Write your findings to `<scratchpad>/<topic>-facts.md` and reply with just the path and a
+   20-line digest."** A report that exists only in a hand-back is lost if anything goes wrong on
+   the way home, and then the research is paid for twice. The file is the deliverable.
+2. **"Name the pages you checked."** Give them the doc root to start from. A fact that is real but
+   lives on a page nobody opened reads exactly like a fact that doesn't exist — one run marked an
+   env-var default "not documented" because it had only grepped the feature page, not the
+   environment-variables page.
+3. **"Quote exact field names, payload shapes, version numbers and limits."** Paraphrase is where
+   correct research turns into a wrong page.
+4. **"List separately what you could NOT confirm, and never fill a gap from memory."**
+
+Keep it bounded: aim for a digest of a few hundred lines per topic, not an exhaustive transcript of
+the docs. A fact-check that runs longer than the page takes to write is over-scoped — split the
+topic or narrow the question, and say so in the prompt.
+
+Then:
+
 - **Prefer the project's own artifacts** over recollection: the real config file in the repo, the
   real transcript, the real slide. Read them.
-- **Treat an agent's report as a lead, not as truth.** Anything it flags unconfirmed either gets
-  cut, or stated as the weaker claim you *can* support. Say "check its README for the current
-  setup" rather than inventing the setup.
+- **Treat an agent's report as a lead, not as truth**, and spot-check anything load-bearing against
+  the source yourself. Anything it flags unconfirmed either gets cut, or stated as the weaker claim
+  you *can* support — say "check its README for the current setup" rather than inventing the setup.
+- **Watch for a superseded baseline.** If a checker reports that the version you assumed is no
+  longer current, that is a finding for the page, not an inconvenience: teach both eras when
+  deployed systems still run the old one.
 - If the repo has a rule about verifying facts (e.g. `.claude/rules/verify-facts.md`), follow it.
 
 When you drop or soften a claim, tell the user at the end which ones and why. That short list is
@@ -113,7 +133,10 @@ Fix what it shows in one pass, then publish with the Artifact tool: a specific t
 `<title>`, one emoji favicon, and a one-sentence description.
 
 Mojibake in a local screenshot (`â€"`, `Â·`) is almost always the local server sending no charset —
-check the file with `grep -c 'â€' file.html` before "fixing" anything.
+check the file with `grep -c 'â€' file.html` before "fixing" anything. Zero hits means the bytes are
+fine and the published page will be fine: the publish skeleton supplies `<!doctype>`, charset and
+viewport, which is exactly why the base file starts at `<title>`. Don't add a charset meta to
+"fix" a preview artifact.
 
 ### 6. Hand it over
 

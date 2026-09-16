@@ -84,6 +84,7 @@ section{display:flex;flex-direction:column;gap:22px;min-width:0}
 .sec-head .lede{font-size:17.5px;color:var(--text-soft);max-width:68ch}
 h3{font-size:19px;font-weight:600;color:var(--text)}
 .prose{max-width:70ch;color:var(--text);display:flex;flex-direction:column;gap:12px}
+p.prose{display:block} /* a paragraph is not a stack — flex would make each inline <code> its own line */
 .muted{color:var(--text-soft)}
 .small{font-size:14px}
 
