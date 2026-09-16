@@ -45,6 +45,12 @@ Turns the current Claude Code session's on-disk transcript into a self-contained
 terminal-replay HTML artifact (play/pause, speed, scrub), with a switchable pane per subagent.
 Triggers on requests like "make a replay/video of this session".
 
+### `tech-deep-dive-artifact`
+
+Builds a published, RavTech-themed HTML artifact that explains a list of technical topics at real
+engineering depth — exact field names, payloads, configs, limits, and traps. Triggers on requests
+like "explain these concepts" or "make me a reference page for X, Y and Z".
+
 ## Installing this marketplace
 
 Inside Claude Code, add this repo as a plugin marketplace:
@@ -58,6 +64,7 @@ Then install whichever plugin(s) you want:
 ```
 /plugin install planex@agentnet-marketplace
 /plugin install session-terminal-replay@agentnet-marketplace
+/plugin install tech-deep-dive-artifact@agentnet-marketplace
 ```
 
 Plugins normally activate immediately. If a plugin doesn't show up as available, run

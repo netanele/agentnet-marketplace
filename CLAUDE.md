@@ -6,10 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `agentnet-marketplace` is a **Claude Code plugin marketplace** — not an application. It has no
 build, lint, or test tooling; its "source code" is Markdown skill definitions consumed by Claude
-Code itself. The repo currently registers two plugins in the marketplace manifest: `planex`, which
+Code itself. The repo currently registers three plugins in the marketplace manifest: `planex`, which
 orchestrates multi-agent work via the `Agent`/`SendMessage`/`TaskStop` tools rather than executing
-anything itself, and `session-terminal-replay`, which renders a session transcript as an HTML
-replay. A third plugin, `bmad-autopilot`, still lives in the repo but is unregistered from the
+anything itself; `session-terminal-replay`, which renders a session transcript as an HTML replay;
+and `tech-deep-dive-artifact`, which publishes deep technical explainer pages. A fourth plugin, `bmad-autopilot`, still lives in the repo but is unregistered from the
 marketplace (see below).
 
 ## Structure
@@ -23,6 +23,7 @@ marketplace (see below).
 - `<plugin-name>/references/*.md` — detailed instructions loaded on demand by the SKILL.md (kept
   out of the main file to save context until actually needed).
 - `<plugin-name>/scripts/` — helper scripts a skill runs (e.g. Python stdlib).
+- `<plugin-name>/evals/` — skill-creator eval definitions (not loaded at runtime).
 - `<plugin-name>/assets/` — non-Markdown supporting files shipped with a plugin (e.g. a
   standalone HTML dashboard).
 
@@ -94,6 +95,15 @@ an Artifact. It shows only what the real terminal shows (no raw tool JSON or har
 
 - `scripts/build_replay.py` — stdlib-only Python: finds, parses, and renders the transcript.
 - `assets/replay-template.html` — the player template the script fills in.
+
+### `tech-deep-dive-artifact`
+
+Model-invocable skill that turns a list of technical topics into a published, RavTech-themed HTML
+Artifact explained at engineering depth (real fields, payloads, configs, limits, traps).
+
+- `assets/ravtech-base.html` — the themed page shell the artifact is built on.
+- `references/components.md` — the component patterns to use inside that shell.
+- `evals/evals.json` — skill-creator evals for the skill.
 
 ## Working on this repo
 

@@ -27,6 +27,18 @@
         "artifact",
         "transcript"
       ]
+    },
+    {
+      "name": "tech-deep-dive-artifact",
+      "source": "./tech-deep-dive-artifact",
+      "description": "Build a RavTech-themed HTML artifact that explains a list of technical topics at real engineering depth.",
+      "category": "productivity",
+      "tags": [
+        "claude code",
+        "artifact",
+        "documentation",
+        "explainer"
+      ]
     }
   ]
 }

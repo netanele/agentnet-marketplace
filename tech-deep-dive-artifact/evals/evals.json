@@ -1,0 +1,43 @@
+{
+  "skill_name": "tech-deep-dive-artifact",
+  "evals": [
+    {
+      "id": 0,
+      "name": "mcp-three-topics",
+      "prompt": "build me an artifact explaining these three topics for my course: MCP server transports (stdio vs HTTP), how tools/resources/prompts are declared by an MCP server, and how Claude Code discovers and loads .mcp.json",
+      "expected_output": "One RavTech-themed single-file HTML page with exactly three sections in the given order, each carrying real identifiers (JSON-RPC method names, .mcp.json keys), at least one real config/payload block, numbers/limits, and a trap. English only, dark-mode tokens intact, unverified claims flagged in the hand-off.",
+      "files": [],
+      "assertions": [
+        {"id": "sections-match-topics", "text": "The page has exactly three top-level sections, one per requested topic, in the order the user listed them"},
+        {"id": "real-identifiers", "text": "Each section names real identifiers as the software spells them (tools/list, tools/call, resources/read; mcpServers, command, args, env, type/url)"},
+        {"id": "real-artifact-per-section", "text": "Each section contains at least one real config file, payload or command block — not pseudo-code"},
+        {"id": "numbers-present", "text": "The page states at least three concrete numbers (protocol version, timeout, scope count, size limit)"},
+        {"id": "trap-called-out", "text": "At least two traps or failure-path behaviours are called out explicitly"},
+        {"id": "ravtech-tokens", "text": "CSS declares the RavTech palette (#0a1f3d, #00c8ff, #ff7a00) and loads Heebo + Rubik + JetBrains Mono"},
+        {"id": "three-state-theme", "text": "Theme tokens are defined in bare :root, in a prefers-color-scheme:dark block guarded by :not([data-theme=\"light\"]), and in :root[data-theme=\"dark\"]"},
+        {"id": "responsive-safety", "text": "Code blocks scroll, tables sit in a scroll container, no min-width wider than 400px"},
+        {"id": "english-no-placeholder", "text": "English only, no leftover template text, lorem, or TODO markers"},
+        {"id": "unverified-flagged", "text": "The hand-off lists the claims that could not be verified"}
+      ]
+    },
+    {
+      "id": 1,
+      "name": "postgres-internals",
+      "prompt": "I need a technical explainer page on Postgres internals for engineers on my team: MVCC and tuple visibility, autovacuum tuning, and index-only scans / the visibility map",
+      "expected_output": "Same page contract on a subject outside Claude Code: three sections, real system column and GUC names, real SQL/EXPLAIN output, defaults and thresholds, and the traps (long transactions, wraparound, stale visibility map).",
+      "files": [],
+      "assertions": [
+        {"id": "sections-match-topics", "text": "The page has exactly three top-level sections, one per requested topic, in the order the user listed them"},
+        {"id": "real-identifiers", "text": "Each section names real identifiers as Postgres spells them (xmin/xmax/ctid, autovacuum_vacuum_scale_factor, pg_visibility, Heap Fetches)"},
+        {"id": "real-artifact-per-section", "text": "Each section contains at least one real SQL statement, EXPLAIN output, or postgresql.conf snippet"},
+        {"id": "numbers-present", "text": "The page states real defaults and thresholds (0.2 / 0.1 scale factors, threshold 50, 200 million freeze age)"},
+        {"id": "trap-called-out", "text": "At least two traps are called out (long transactions holding the xmin horizon, wraparound, stale visibility map)"},
+        {"id": "ravtech-tokens", "text": "CSS declares the RavTech palette (#0a1f3d, #00c8ff, #ff7a00) and loads Heebo + Rubik + JetBrains Mono"},
+        {"id": "three-state-theme", "text": "Theme tokens are defined in bare :root, in a prefers-color-scheme:dark block guarded by :not([data-theme=\"light\"]), and in :root[data-theme=\"dark\"]"},
+        {"id": "responsive-safety", "text": "Code blocks scroll, tables sit in a scroll container, no min-width wider than 400px"},
+        {"id": "english-no-placeholder", "text": "English only, no leftover template text, lorem, or TODO markers"},
+        {"id": "unverified-flagged", "text": "The hand-off lists the claims that could not be verified"}
+      ]
+    }
+  ]
+}
