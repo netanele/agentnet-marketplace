@@ -39,6 +39,12 @@ opus code-review + security-review pass before cutover.
 - Interrupted or crashed runs resume cleanly: re-run `/planex docs/implementations/<slug>/plan.md`
   and Claude reconciles the branch/worktree/tracker state before continuing.
 
+### `session-terminal-replay`
+
+Turns the current Claude Code session's on-disk transcript into a self-contained, animated
+terminal-replay HTML artifact (play/pause, speed, scrub), with a switchable pane per subagent.
+Triggers on requests like "make a replay/video of this session".
+
 ## Installing this marketplace
 
 Inside Claude Code, add this repo as a plugin marketplace:
@@ -51,6 +57,7 @@ Then install whichever plugin(s) you want:
 
 ```
 /plugin install planex@agentnet-marketplace
+/plugin install session-terminal-replay@agentnet-marketplace
 ```
 
 Plugins normally activate immediately. If a plugin doesn't show up as available, run

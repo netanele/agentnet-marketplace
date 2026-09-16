@@ -1,0 +1,459 @@
+<title>Session Replay</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --bg:#000000;
+    --bg-elevated:#181818;
+    --bg-header:#0c0c0c;
+    --border:#2a2a2a;
+    --text:#8fd88f;
+    --text-dim:#8a8f98;
+    --text-faint:#5a5f66;
+    --accent:#e5645a;
+    --accent-soft:#e5645a33;
+    --tool:#6cb6ff;
+    --ok:#5fd75f;
+    --warn:#e5645a;
+    --thumb:#e5645a;
+    --track:#232323;
+    --user-bg:#2b2b2b;
+    --user-text:#ffffff;
+  }
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:13.5px;line-height:1.55;
+  }
+  .app{height:100%;display:flex;flex-direction:column;min-width:0}
+
+  .titlebar{
+    flex:0 0 auto;display:flex;align-items:center;gap:10px;
+    padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top,0px));
+    background:var(--bg-header);border-bottom:1px solid var(--border);
+  }
+  .dots{display:flex;gap:6px;flex:0 0 auto}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .dot.r{background:#e0665f} .dot.y{background:#e0b95f} .dot.g{background:#5fc46a}
+  .titlebar .name{
+    flex:1;text-align:center;color:var(--text-dim);font-size:12px;letter-spacing:.02em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .titlebar .count{flex:0 0 auto;color:var(--text-faint);font-size:11px;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+
+  .tabbar{
+    flex:0 0 auto;display:flex;align-items:center;gap:4px;flex-wrap:wrap;
+    padding:6px 10px;background:var(--bg-header);border-bottom:1px solid var(--border);
+  }
+  .tab{
+    font-family:inherit;font-size:11.5px;color:var(--text-dim);background:transparent;
+    border:1px solid transparent;border-radius:6px;padding:4px 10px;cursor:pointer;
+  }
+  .tab[hidden]{display:none}
+  .tab.active{color:var(--text);background:var(--bg-elevated);border-color:var(--border)}
+  .tab.agent::before{content:"⑂ ";color:var(--accent)}
+  #followBtn{
+    font-family:inherit;font-size:11px;color:var(--accent);background:transparent;
+    border:1px solid var(--accent-soft);border-radius:6px;padding:3px 9px;cursor:pointer;margin-left:auto;
+  }
+  #followBtn[hidden]{display:none}
+
+  #term{flex:1 1 auto;min-height:0;position:relative}
+  .paneview{position:absolute;inset:0;overflow-y:auto;padding:18px 18px 30px}
+  .paneview[hidden]{display:none}
+  .paneview::-webkit-scrollbar{width:10px}
+  .paneview::-webkit-scrollbar-thumb{background:var(--track);border-radius:6px}
+  .paneview::-webkit-scrollbar-track{background:transparent}
+
+  .ev{margin:0 0 14px;max-width:900px}
+  .ev[hidden]{display:none}
+  .ev pre.body{margin:0;white-space:pre-wrap;word-break:break-word;font-family:inherit}
+  .bt{white-space:pre-wrap}
+  .cursor{display:inline-block;color:var(--accent);animation:blink 1s steps(1) infinite}
+  .cursor[hidden]{display:none}
+  @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){.cursor{animation:none;opacity:1}}
+
+  .ev-human{background:var(--user-bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px}
+  .ev-human .head{display:inline}
+  .ev-human .chev{color:var(--text-dim);font-weight:700;margin-right:8px}
+  .ev-human pre.body{display:inline;color:var(--user-text);font-weight:700}
+
+  .ev-assistant_text pre.body{color:var(--text)}
+
+  .ev-tool .head{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;color:var(--text)}
+  .ev-tool .head:empty{display:none}
+  .bullet{color:var(--text)}
+  .tname{color:var(--accent);font-weight:700}
+  .targ{color:var(--text)}
+
+  .result{display:flex;gap:8px;margin-top:4px;padding-left:2px;color:var(--text-dim)}
+  .result:empty{display:none}
+  .elbow{color:var(--text-faint);flex:0 0 auto}
+  .result pre.body{color:var(--text-dim)}
+  .result.ok pre.body,.result.ok{color:var(--ok)}
+  .result.warn pre.body,.result.warn{color:var(--warn)}
+  .result.jump .elbow{color:var(--accent)}
+  .jumplink{
+    color:var(--tool);background:none;border:none;font-family:inherit;font-size:inherit;
+    cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px;
+  }
+
+  /* Markdown-lite: only assistant prose and plan-review text get formatted
+     (matches Claude Code's own terminal — raw tool output stays literal). */
+  .md-h1{color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+  .md-h2{color:var(--accent);font-weight:700}
+  pre.body strong{color:var(--accent);font-weight:700}
+  pre.body code{color:var(--tool);font-family:inherit}
+
+  /* File-diff view, matching Claude Code's own Update()/Create() rendering:
+     a numbered gutter plus full-row red/green highlight for changed lines. */
+  .diffblock{margin-top:2px;font-size:12.5px;max-width:100%;overflow-x:auto}
+  .diffrow{display:flex}
+  .diffrow[hidden]{display:none}
+  .diffnum{width:40px;flex:0 0 auto;text-align:right;padding-right:10px;color:var(--text-faint);user-select:none}
+  .diffmarker{width:14px;flex:0 0 auto;text-align:center;color:var(--text-faint)}
+  .difftext{flex:1;white-space:pre-wrap;word-break:break-word;color:var(--text-dim)}
+  .diffrow-add{background:#123a1c}
+  .diffrow-add .diffmarker{color:var(--ok);font-weight:700}
+  .diffrow-add .difftext{color:#bfe9bf}
+  .diffrow-del{background:#3a1414}
+  .diffrow-del .diffmarker{color:var(--warn);font-weight:700}
+  .diffrow-del .difftext{color:#f0c2c2}
+
+  .controls{
+    flex:0 0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
+    background:var(--bg-header);border-top:1px solid var(--border);
+  }
+  #playBtn{
+    flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid var(--border);
+    background:var(--accent);color:#1a1005;font-size:13px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  #playBtn:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .speedgroup{display:flex;align-items:center;gap:8px;flex:0 0 auto;color:var(--text-dim);font-size:12px}
+  .speedgroup input[type=range]{width:100px}
+  #speedLabel{width:34px;color:var(--text);font-variant-numeric:tabular-nums}
+  .scrubwrap{flex:1 1 220px;display:flex;align-items:center;gap:10px;min-width:0}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--track);flex:1;min-width:0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--thumb);cursor:pointer;border:none}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--thumb);cursor:pointer;border:none}
+  #progressLabel{flex:0 0 auto;color:var(--text-faint);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+</style>
+
+<div class="app">
+  <div class="titlebar">
+    <div class="dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+    <div class="name">{{SESSION_LABEL}}</div>
+    <div class="count">{{EVENT_COUNT}} events</div>
+  </div>
+
+  <div class="tabbar" id="tabbar">
+    <button id="followBtn" type="button" hidden>↩ follow</button>
+  </div>
+
+  <div id="term"></div>
+
+  <div class="controls">
+    <button id="playBtn" type="button" aria-label="Pause">⏸</button>
+    <div class="speedgroup">
+      <label for="speed">Speed</label>
+      <input type="range" id="speed" min="0" max="5" step="1" value="2" aria-label="Playback speed">
+      <span id="speedLabel">1x</span>
+    </div>
+    <div class="scrubwrap">
+      <input type="range" id="scrub" min="0" max="1000" step="1" value="0" aria-label="Scrub through session">
+    </div>
+    <div id="progressLabel">0 / 0</div>
+  </div>
+</div>
+
+{{DATA_SCRIPTS}}
+<script>
+(function(){
+  "use strict";
+
+  var DATA = window.__TR || [];
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>]/g, function(c){
+      return c==='&'?'&amp;':c==='<'?'&lt;':'&gt;';
+    });
+  }
+
+  // Renders **bold**, `code`, and leading #/## headings the way
+  // Claude Code's own terminal formats assistant prose and plan text. Only
+  // complete (closed) markers are ever formatted — a marker still open at
+  // the current typewriter position is left as literal text for the instant
+  // until its close arrives, so nothing is ever left visibly dangling.
+  function inlineMd(s){
+    s = s.replace(/`([^`\n]+?)`/g, '<code>$1</code>');
+    s = s.replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
+    return s;
+  }
+
+  function mdLite(raw){
+    return escapeHtml(raw).split('\n').map(function(line){
+      var m = line.match(/^(#{1,6})\s+(.*)$/);
+      if (m){
+        var cls = m[1].length === 1 ? 'md-h1' : 'md-h2';
+        return '<span class="' + cls + '">' + inlineMd(m[2]) + '</span>';
+      }
+      return inlineMd(line);
+    }).join('\n');
+  }
+
+  var term = document.getElementById('term');
+  var tabbar = document.getElementById('tabbar');
+  var followBtn = document.getElementById('followBtn');
+
+  var els = [];
+  var meta = [];
+  var diffRowEls = [];
+  var bodyShares = [];
+  var totalWeight = 0;
+  var paneViews = {};
+  var tabEls = {};
+  var paneOrder = [];
+  var paneFirstStart = {};
+
+  function ensurePane(id, label){
+    if (paneViews[id]) return paneViews[id];
+    var view = document.createElement('div');
+    view.className = 'paneview';
+    view.hidden = (id !== 'main');
+    term.appendChild(view);
+    paneViews[id] = view;
+
+    var tab = document.createElement('button');
+    tab.type = 'button';
+    tab.className = 'tab' + (id === 'main' ? ' active' : ' agent');
+    tab.textContent = id === 'main' ? 'main' : (label || id);
+    tab.hidden = (id !== 'main');
+    tab.addEventListener('click', function(){
+      manualPane = id;
+      autoFollow = false;
+      applyActivePane();
+    });
+    tabbar.insertBefore(tab, followBtn);
+    tabEls[id] = tab;
+    paneOrder.push(id);
+    return view;
+  }
+
+  (function build(){
+    var cum = 0;
+    for (var i = 0; i < DATA.length; i++){
+      var ev = DATA[i];
+      var view = ensurePane(ev.pane, ev.label);
+      if (!(ev.pane in paneFirstStart)) paneFirstStart[ev.pane] = cum;
+
+      var div = document.createElement('div');
+      div.hidden = true;
+      div.className = 'ev ev-' + ev.kind;
+
+      if (ev.kind === 'human'){
+        div.innerHTML = '<span class="head"><span class="chev">&gt;</span></span>' +
+          '<pre class="body"><span class="bt"></span><span class="cursor" hidden>▊</span></pre>';
+      } else if (ev.kind === 'assistant_text'){
+        div.innerHTML = '<pre class="body"><span class="bt"></span><span class="cursor" hidden>▊</span></pre>';
+      } else { // tool
+        var headHTML = '<div class="head">' + (ev.tool ?
+          ('<span class="bullet">⏺</span> <span class="tname">' + escapeHtml(ev.tool) + '</span>' +
+            (ev.arg ? '<span class="targ">(' + escapeHtml(ev.arg) + ')</span>' : '')) : '') + '</div>';
+        var resultHTML = '<div class="result' + (ev.variant ? (' ' + ev.variant) : '') +
+          (ev.targetPane ? ' jump' : '') + '"></div>';
+        div.innerHTML = headHTML + resultHTML;
+        var resultEl = div.querySelector('.result');
+        if (ev.body || ev.targetPane){
+          resultEl.innerHTML = '<span class="elbow">L</span><pre class="body"><span class="bt"></span><span class="cursor" hidden>▊</span></pre>';
+          if (ev.targetPane){
+            var jumpBtn = document.createElement('button');
+            jumpBtn.type = 'button';
+            jumpBtn.className = 'jumplink';
+            jumpBtn.textContent = '  (view ' + (ev.targetLabel || ev.targetPane) + ')';
+            jumpBtn.addEventListener('click', (function(pid){
+              return function(){ manualPane = pid; autoFollow = false; applyActivePane(); };
+            })(ev.targetPane));
+            resultEl.appendChild(jumpBtn);
+          }
+        }
+      }
+
+      var diffRows = null;
+      var diffChars = 0;
+      if (ev.diff && ev.diff.length){
+        var diffDiv = document.createElement('div');
+        diffDiv.className = 'diffblock';
+        var flatRows = [];
+        ev.diff.forEach(function(hunk){ hunk.forEach(function(r){ flatRows.push(r); }); });
+        flatRows.forEach(function(r){
+          var rowEl = document.createElement('div');
+          rowEl.className = 'diffrow diffrow-' + r.t;
+          rowEl.hidden = true;
+          var num = r.t === 'del' ? r.old : r.new;
+          var marker = r.t === 'add' ? '+' : (r.t === 'del' ? '-' : '');
+          rowEl.innerHTML = '<span class="diffnum">' + (num != null ? num : '') + '</span>' +
+            '<span class="diffmarker">' + marker + '</span>' +
+            '<span class="difftext"></span>';
+          rowEl.querySelector('.difftext').textContent = r.text;
+          diffDiv.appendChild(rowEl);
+          diffChars += r.text.length + 1;
+        });
+        div.appendChild(diffDiv);
+        diffRows = flatRows.length ? Array.prototype.slice.call(diffDiv.querySelectorAll('.diffrow')) : null;
+      }
+
+      view.appendChild(div);
+      els.push(div);
+      diffRowEls.push(diffRows);
+
+      var bodyLen = ev.body ? ev.body.length : 0;
+      var floor = (ev.kind === 'human' || ev.kind === 'assistant_text') ? 20 : 40;
+      var bodyShare = bodyLen > 0 ? Math.max(bodyLen, floor) : 26;
+      bodyShares.push(bodyShare);
+      var w = bodyShare + diffChars;
+      var start = cum;
+      cum += w;
+      meta.push({start: start, end: cum, pane: ev.pane});
+    }
+    totalWeight = cum;
+  })();
+
+  var elapsedChars = 0;
+  var playing = true;
+  var speeds = [0.25, 0.5, 1, 2, 4, 8];
+  var speed = 1;
+  var lastTs = null;
+  var scrubbing = false;
+  var autoFollow = true;
+  var manualPane = null;
+  var activePane = 'main';
+
+  var playBtn = document.getElementById('playBtn');
+  var speedInput = document.getElementById('speed');
+  var speedLabel = document.getElementById('speedLabel');
+  var scrub = document.getElementById('scrub');
+  var progressLabel = document.getElementById('progressLabel');
+
+  function currentIndex(){
+    for (var i = meta.length - 1; i >= 0; i--){
+      if (elapsedChars > meta[i].start) return i;
+    }
+    return -1;
+  }
+
+  function applyActivePane(){
+    var target = autoFollow ? currentAutoPane() : (manualPane || 'main');
+    if (target !== activePane){
+      if (paneViews[activePane]) paneViews[activePane].hidden = true;
+      if (paneViews[target]) paneViews[target].hidden = false;
+      activePane = target;
+    }
+    for (var id in tabEls){
+      tabEls[id].classList.toggle('active', id === activePane);
+    }
+    followBtn.hidden = autoFollow;
+  }
+
+  function currentAutoPane(){
+    var idx = currentIndex();
+    return idx >= 0 ? meta[idx].pane : 'main';
+  }
+
+  function renderAll(){
+    for (var i = 0; i < DATA.length; i++){
+      var ev = DATA[i], m = meta[i], el = els[i];
+      if (elapsedChars <= m.start){
+        if (!el.hidden) el.hidden = true;
+        continue;
+      }
+      el.hidden = false;
+      var totalW = (m.end - m.start) || 1;
+      var charsInto = Math.min(totalW, elapsedChars - m.start);
+      var bodyShare = bodyShares[i];
+      if (ev.body){
+        var textFrac = bodyShare > 0 ? Math.min(1, charsInto / bodyShare) : 1;
+        var bt = el.querySelector('.bt');
+        var cursor = el.querySelector('.cursor');
+        var n = Math.round(textFrac * ev.body.length);
+        var slice = ev.body.slice(0, n);
+        if (ev.markdown) bt.innerHTML = mdLite(slice); else bt.textContent = slice;
+        cursor.hidden = !(textFrac > 0 && textFrac < 1);
+      }
+      if (diffRowEls[i]){
+        var rows = diffRowEls[i];
+        var diffChars = totalW - bodyShare;
+        var diffProgress = diffChars > 0 ? Math.max(0, Math.min(1, (charsInto - bodyShare) / diffChars)) : 0;
+        var showCount = Math.round(diffProgress * rows.length);
+        for (var r = 0; r < rows.length; r++) rows[r].hidden = r >= showCount;
+      }
+    }
+    paneOrder.forEach(function(id){
+      if (elapsedChars > paneFirstStart[id] && tabEls[id].hidden) tabEls[id].hidden = false;
+    });
+    applyActivePane();
+    if (paneViews[activePane]) paneViews[activePane].scrollTop = paneViews[activePane].scrollHeight;
+
+    var idx = currentIndex();
+    progressLabel.textContent = (idx + 1) + ' / ' + DATA.length;
+    if (!scrubbing && totalWeight > 0){
+      scrub.value = String(Math.round((elapsedChars / totalWeight) * 1000));
+    }
+  }
+
+  function setPlaying(p){
+    playing = p;
+    playBtn.textContent = playing ? '⏸' : '▶';
+    playBtn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  }
+
+  playBtn.addEventListener('click', function(){
+    if (elapsedChars >= totalWeight && !playing) elapsedChars = 0;
+    setPlaying(!playing);
+  });
+
+  speedInput.addEventListener('input', function(){
+    speed = speeds[Number(speedInput.value)];
+    speedLabel.textContent = speed + 'x';
+  });
+
+  followBtn.addEventListener('click', function(){
+    autoFollow = true;
+    manualPane = null;
+    applyActivePane();
+  });
+
+  scrub.addEventListener('pointerdown', function(){ scrubbing = true; setPlaying(false); });
+  scrub.addEventListener('input', function(){
+    if (totalWeight > 0) elapsedChars = (Number(scrub.value) / 1000) * totalWeight;
+    renderAll();
+  });
+  scrub.addEventListener('pointerup', function(){ scrubbing = false; });
+
+  function tick(ts){
+    if (lastTs === null) lastTs = ts;
+    var dt = (ts - lastTs) / 1000;
+    lastTs = ts;
+    if (playing && totalWeight > 0){
+      elapsedChars += dt * 60 * speed;
+      if (elapsedChars >= totalWeight){
+        elapsedChars = totalWeight;
+        setPlaying(false);
+      }
+      renderAll();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  if (totalWeight === 0){
+    setPlaying(false);
+    progressLabel.textContent = 'no events found';
+  } else {
+    setPlaying(true);
+  }
+  renderAll();
+  requestAnimationFrame(tick);
+})();
+</script>

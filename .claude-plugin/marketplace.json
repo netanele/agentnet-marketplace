@@ -3,14 +3,30 @@
   "owner": {
     "name": "Netanel Elbaz"
   },
-  "description": "AgentNet marketplace — plugins for AI coding orchestaration and autonomy.",
+  "description": "AgentNet marketplace — plugins for AI coding orchestaration, autonomy and tools.",
   "plugins": [
     {
       "name": "planex",
       "source": "./planex",
       "description": "Autonomous orchestration of plan and execute via claude code Agent Teams.",
       "category": "workflow",
-      "tags": ["claude code", "agent teams", "orchestration"]
+      "tags": [
+        "claude code",
+        "agent teams",
+        "orchestration"
+      ]
+    },
+    {
+      "name": "session-terminal-replay",
+      "source": "./session-terminal-replay",
+      "description": "Turn the current Claude Code session (and its subagents) into an animated terminal-replay HTML artifact.",
+      "category": "productivity",
+      "tags": [
+        "claude code",
+        "replay",
+        "artifact",
+        "transcript"
+      ]
     }
   ]
 }

@@ -6,10 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `agentnet-marketplace` is a **Claude Code plugin marketplace** — not an application. It has no
 build, lint, or test tooling; its "source code" is Markdown skill definitions consumed by Claude
-Code itself. The repo currently registers one plugin (`planex`) in the marketplace manifest, which
+Code itself. The repo currently registers two plugins in the marketplace manifest: `planex`, which
 orchestrates multi-agent work via the `Agent`/`SendMessage`/`TaskStop` tools rather than executing
-anything itself. A second plugin, `bmad-autopilot`, still lives in the repo but is unregistered
-from the marketplace (see below).
+anything itself, and `session-terminal-replay`, which renders a session transcript as an HTML
+replay. A third plugin, `bmad-autopilot`, still lives in the repo but is unregistered from the
+marketplace (see below).
 
 ## Structure
 
@@ -21,6 +22,7 @@ from the marketplace (see below).
   instructions Claude follows when the skill is invoked).
 - `<plugin-name>/references/*.md` — detailed instructions loaded on demand by the SKILL.md (kept
   out of the main file to save context until actually needed).
+- `<plugin-name>/scripts/` — helper scripts a skill runs (e.g. Python stdlib).
 - `<plugin-name>/assets/` — non-Markdown supporting files shipped with a plugin (e.g. a
   standalone HTML dashboard).
 
@@ -83,6 +85,15 @@ explicit invocation only (`disable-model-invocation: true`). Mode is detected fr
   `task/<effort-slug>/<id>-<task-slug>`, integration branch `planex/<slug>`, milestone tags
   `planex/<slug>/M<n>`, worktree `.planex/<slug>` — so several efforts can run concurrently in one
   repo without colliding. Never touch a branch/worktree outside the current effort's namespace.
+
+### `session-terminal-replay`
+
+Model-invocable skill that reads the current session's JSONL transcript (plus each subagent's
+`agent-<id>.jsonl`) from `~/.claude/projects/<slug>/` and publishes an animated terminal replay as
+an Artifact. It shows only what the real terminal shows (no raw tool JSON or harness plumbing).
+
+- `scripts/build_replay.py` — stdlib-only Python: finds, parses, and renders the transcript.
+- `assets/replay-template.html` — the player template the script fills in.
 
 ## Working on this repo
 
