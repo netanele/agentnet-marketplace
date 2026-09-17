@@ -39,6 +39,18 @@
         "documentation",
         "explainer"
       ]
+    },
+    {
+      "name": "live-demo-animation",
+      "source": "./live-demo-animation",
+      "description": "Turn a technical topic into an animated hands-on live demo — a local HTML file that plays inside a faithful replica of the Claude Code desktop IDE (file tree · Claude terminal / file viewer · shell), linked to the topic's deep-dive page.",
+      "category": "productivity",
+      "tags": [
+        "claude code",
+        "animation",
+        "demo",
+        "course"
+      ]
     }
   ]
 }

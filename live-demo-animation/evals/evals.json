@@ -1,0 +1,49 @@
+{
+  "skill_name": "live-demo-animation",
+  "evals": [
+    {
+      "id": 1,
+      "name": "pretooluse-hook-demo",
+      "prompt": "I'm teaching Claude Code hooks next week. Make me a live demo animation of PreToolUse hooks — students should see where the hook is wired, the script, what happens when Claude tries a blocked command. Use projects/file-browser in this repo, it has a real guard-bash hook.",
+      "expected_output": "Two local HTML files in projects/file-browser: <slug>-live-demo.html (animated Claude Code IDE: sidebar tree, main pane switching between Claude terminal and file viewer, bottom shell) showing .claude/settings.json and .claude/hooks/guard-bash.sh opened from the real tree, the hook run standalone in the shell with its real BLOCKED output, then a prompt to Claude whose Bash call is blocked with the hook's stderr; and the deep-dive explainer HTML, linked from the demo's player bar. Timeline JSON built via build_demo.py. Nothing published.",
+      "files": [],
+      "assertions": [
+        "Deliverable is a self-contained local HTML file written into the project root (its only external resource is a Google Fonts stylesheet, no external JS); nothing was published as an Artifact",
+        "The IDE replica has all three panes: a sidebar file tree, a main pane that switches between the Claude Code terminal and a file viewer, and a bottom shell terminal",
+        "Every file opened in the animation exists at that path in projects/file-browser and its shown content matches the file on disk (byte-identical up to the first 600 lines; a longer file is truncated with an explicit \u2026 N more lines marker, never abridged silently or renumbered)",
+        "Every shell command output shown reproduces when the command is re-run; any elision is marked with an ellipsis",
+        "A Claude turn is shown with a typed prompt, at least one tool-call line (⏺ Name(arg) + ⎿ result line), streamed prose, and a ❋ done line",
+        "The Claude pane reproduces the real app's chrome: ❯ composer, status line with project name + [model · effort] + usage bar, and the ▶▶ mode line",
+        "Captions narrate each beat, and the player offers play/pause, step, and a draggable scrub bar",
+        "The player bar has a Deep dive link whose relative href resolves to the deep-dive HTML the tech-deep-dive-artifact skill wrote in the same folder",
+        "The hand-off states which Claude turns were captured from a real run (with the run.jsonl path) vs authored",
+        "The animation opens .claude/settings.json and highlights/scrolls to the PreToolUse hook entry (the Bash matcher → guard-bash.sh)",
+        "The animation opens .claude/hooks/guard-bash.sh and highlights the exit 2 / block() mechanism",
+        "The hook's real BLOCKED stderr text ('BLOCKED by guard-bash hook: …') appears verbatim, either from a standalone shell run or as the tool-result of the blocked Bash call",
+        "The Claude turn shows the dangerous Bash call being blocked (warn-styled result carrying Claude Code's 'PreToolUse:Bash hook error' prefix if captured), not executed"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "path-scoped-rules-demo",
+      "prompt": "show my students how path-scoped rules work in claude code (the .claude/rules/*.md files with paths: frontmatter) — I want an animation they can watch, not slides. demo project is projects/file-browser",
+      "expected_output": "Two local HTML files in projects/file-browser: the animated demo (Claude Code IDE replica) that opens a real .claude/rules/*.md file showing its paths: frontmatter, contrasts with an always-on rule, shows a negative case (non-matching Read → rule not loaded) and a positive case (matching Read → rule loaded), then a Claude edit that obeys the rule; and the deep-dive explainer HTML linked from the demo. Real file contents from disk; captions per beat; nothing published.",
+      "files": [],
+      "assertions": [
+        "Deliverable is a self-contained local HTML file written into the project root (its only external resource is a Google Fonts stylesheet, no external JS); nothing was published as an Artifact",
+        "The IDE replica has all three panes: a sidebar file tree, a main pane that switches between the Claude Code terminal and a file viewer, and a bottom shell terminal",
+        "Every file opened in the animation exists at that path in projects/file-browser and its shown content matches the file on disk (byte-identical up to the first 600 lines; a longer file is truncated with an explicit \u2026 N more lines marker, never abridged silently or renumbered)",
+        "Every shell command output shown reproduces when the command is re-run; any elision is marked with an ellipsis",
+        "A Claude turn is shown with a typed prompt, at least one tool-call line (⏺ Name(arg) + ⎿ result line), streamed prose, and a ❋ done line",
+        "The Claude pane reproduces the real app's chrome: ❯ composer, status line with project name + [model · effort] + usage bar, and the ▶▶ mode line",
+        "Captions narrate each beat, and the player offers play/pause, step, and a draggable scrub bar",
+        "The player bar has a Deep dive link whose relative href resolves to the deep-dive HTML the tech-deep-dive-artifact skill wrote in the same folder",
+        "The hand-off states which Claude turns were captured from a real run (with the run.jsonl path) vs authored",
+        "The animation opens a real .claude/rules/*.md file from file-browser that has a `paths:` frontmatter and highlights that frontmatter",
+        "The demo contrasts a path-scoped rule with an always-on rule (no paths:)",
+        "A negative case is shown: Claude reads a file outside the rule's globs and the rule is not loaded",
+        "A positive case is shown: Claude reads/edits a file matching the rule's paths glob and the rule's effect is visible"
+      ]
+    }
+  ]
+}

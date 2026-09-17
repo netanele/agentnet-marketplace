@@ -6,11 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `agentnet-marketplace` is a **Claude Code plugin marketplace** — not an application. It has no
 build, lint, or test tooling; its "source code" is Markdown skill definitions consumed by Claude
-Code itself. The repo currently registers three plugins in the marketplace manifest: `planex`, which
+Code itself. The repo currently registers four plugins in the marketplace manifest: `planex`, which
 orchestrates multi-agent work via the `Agent`/`SendMessage`/`TaskStop` tools rather than executing
 anything itself; `session-terminal-replay`, which renders a session transcript as an HTML replay;
-and `tech-deep-dive-artifact`, which writes deep technical explainer pages as local HTML files. A
-fourth plugin, `bmad-autopilot`, still lives in the repo but is unregistered from the marketplace
+`tech-deep-dive-artifact`, which writes deep technical explainer pages as local HTML files; and
+`live-demo-animation`, which builds an animated hands-on demo inside a Claude Code IDE replica. A
+fifth plugin, `bmad-autopilot`, still lives in the repo but is unregistered from the marketplace
 (see below).
 
 ## Structure
@@ -106,6 +107,26 @@ payloads, configs, limits, traps) as a local, RavTech-themed HTML file written t
 - `assets/ravtech-base.html` — the themed page shell the file is built on.
 - `references/components.md` — the component patterns to use inside that shell.
 - `evals/evals.json` — skill-creator evals for the skill.
+
+### `live-demo-animation`
+
+Model-invocable skill that runs `tech-deep-dive-artifact` for the topic's facts (and its local
+deep-dive HTML), then storyboards and builds an animated live demo that plays inside a
+pixel-matched replica of the Claude Code desktop IDE (sidebar file tree · main pane that switches
+between the Claude Code terminal and a file viewer · bottom shell panel). Output is one local
+`<slug>-live-demo.html` in the project root, next to the deep-dive file it links to — not a
+published artifact. Files and command output come from a real project directory at build time.
+
+- `assets/ide-template.html` — the IDE replica + player (play/pause/step/scrub, captions strip,
+  `📄 Deep dive ↗` link, `?t=<ms>&paused=1` QA URLs). Colours/metrics were matched against real
+  screenshots (`assets/reference/*.png`) — change them only against a new screenshot.
+- `scripts/build_demo.py` — stdlib Python: timeline JSON + `--project-root` → `--out file.html`
+  (reads the real tree and files, validates events, reports `problems`).
+- `scripts/claude_stream_to_events.py` — converts a real `claude -p --output-format stream-json`
+  run (or a session `.jsonl`) into `claude.*` timeline events in the terminal's own conventions.
+- `references/timeline-schema.md` — every event type, its fields and defaults.
+- `references/ide-look.md` — the fidelity checklist used when QA-ing screenshots.
+- `evals/evals.json` — skill-creator evals.
 
 ## Working on this repo
 
