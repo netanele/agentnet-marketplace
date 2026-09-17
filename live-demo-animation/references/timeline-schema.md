@@ -17,14 +17,15 @@ here plus the real project directory (tree + file contents are read from disk at
 | --- | --- | --- |
 | `title` | `Live demo` | `<title>` and the label in the player bar |
 | `project` | basename of `--project-root` | root row of the tree, the cyan name in the status line and the shell prompt |
-| `model`, `effort` | `Sonnet 5`, `high` | the magenta `[Sonnet 5 · high]` pill in the status line |
-| `contextPct`, `weeklyPct`, `resets` | `8`, `33`, `3d` | the green usage bar and the weekly counter |
+| `model`, `effort` | `Fable 5.1`, `high` | the magenta `[Fable 5.1 · high]` pill in the status line — keep it on the current model, students read it off the slide |
+| `contextPct`, `sessionPct`, `resets`, `limitLabel` | `29`, `4`, `3h`, `Session (5hr)` | the green context bar (solid fill + hatched remainder) and the `· Session (5hr) 4% (resets 3h)` segment, as the app prints them; `weeklyPct` switches the label to `Weekly (7d)` |
+| `artifactsRow` | — | a third status row `⧉ <text>` (the app shows one when the session has artifacts, e.g. `+2 more · index · deep-dive · /artifacts to see all`) |
 | `mode` | `auto mode on` | the yellow `▶▶ auto mode on (shift+tab to cycle)` line |
 | `clock` | — | the `done 10:49 AM` time used by `claude.done` when the event gives none |
-| `gitBranch`, `gitDirty` | —, `true` | when set, the shell prompt and status line read `project git:(main) ✗` exactly as the app shows a git repo (`gitDirty:false` drops the ✗) |
+| `gitBranch`, `gitDirty` | —, `true` | when set, the shell prompt and status line read `project git:(main) ✗` exactly as the app shows a git repo (`gitDirty:false` drops the ✗ and the root row's orange dot) |
 | `terminalTab` | `zsh` | name of the first terminal tab before any command runs |
 | `expanded` | `[]` | tree folders that start open |
-| `tabs` | `true` | show the file tab strip (`App.tsx ×`) above an open file; `file.close` clicks its × |
+| `tabs` | `false` | the real app shows **no** tab strip above an open file, so this stays off; `true` adds one (`App.tsx ×`) and lets `file.close` click its × |
 | `welcome` | `true` | Claude Code's startup banner in the empty pane (`cwd`, `version`, `plan` fill it) |
 | `deepDive` | — | `{"href":"hooks-deep-dive.html","label":"Deep dive"}` — renders a `📄 Deep dive ↗` link in the player bar. Give the deep-dive file's name **relative to the demo file** (both live in the project root); the build script flags a target that doesn't exist. |
 | `typeMs`, `streamMs` | `58`, `9` | ms per character for human typing / Claude's streamed prose |
@@ -41,7 +42,7 @@ mouse directly.
 | event | fields | what happens |
 | --- | --- | --- |
 | `caption` | `text` (supports `**bold**` and `` `code` ``) | sets the caption strip under the IDE; empty text hides it. Zero duration. |
-| `wait` | `ms` (800) | holds the frame — use it after every reveal the viewer needs to read |
+| `wait` | `ms` (800) | holds the frame — nothing else in the engine pauses, so without a `wait` the next event starts the instant the previous one ends |
 | `pointer.hide` | — | hides the mouse pointer |
 
 ### Sidebar and file viewer
@@ -56,7 +57,9 @@ mouse directly.
 | `file.close` | — | pointer clicks the tab's ×; the main pane returns to Claude Code |
 | `claude.show` | — | same as `file.close` without the click (use when the presenter "switches back") |
 
-Line numbers are 1-based and must match the real file — verify with `grep -n` before authoring.
+Line numbers are 1-based and must match the real file — verify with `grep -n` before authoring; the build script rejects a `line`/`from`/`to` outside the opened file.
+
+**Caps the build applies (it warns when they bite):** an opened file is cut at **600 lines** (a marker line is appended) and a directory shows at most **80 entries** (dirs first, then files) — hide noise with `--ignore` if a needed file falls off.
 
 ### Claude Code pane
 
@@ -71,13 +74,13 @@ Line numbers are 1-based and must match the real file — verify with `grep -n` 
 | `claude.done` | `secs`, `time`, `verb` (Worked) | removes the spinner and prints `❋ Worked for 9s · done 10:49 AM` |
 
 Result-line conventions (these are what the real terminal prints — copy them):
-`Read 120 lines` · `Wrote 34 lines` · `Updated (+3 -1 lines)` · the first ~8 lines of Bash output then `… +N lines` · `Done · 12 tool calls` for an agent · a hook block shows `PreToolUse:Bash hook error: [<command>]: <stderr>` verbatim with `status:"warn"`.
+`Read 120 lines` · `Wrote 34 lines` · `Updated (+3 -1 lines)` · the first ~8 lines of Bash output then `… +N lines` · `Done · 12 tool calls` for an agent (the converter emits `Done`; add the count when you know it) · a hook block shows `PreToolUse:Bash hook error: [<command>]: <stderr>` verbatim with `status:"warn"`.
 
 ### Terminal panel
 
 | event | fields | what happens |
 | --- | --- | --- |
-| `term.cmd` | `cmd`, `out`, `html` (false), `keepTab` (false) | pointer clicks into the terminal, the command is typed, Enter, output lines appear one by one; the tab is renamed to the command's first word (as the app does) unless `keepTab` |
+| `term.cmd` | `cmd`, `out`, `html` (false), `keepTab` (false) | pointer clicks into the terminal, the command is typed, Enter, output lines appear one by one; the tab is renamed to the command's first word (as the app does) unless `keepTab`. A shorter `ms` than the natural length just plays it faster (the build warns) |
 | `term.tab` | `name` | pointer clicks `+`, a new tab opens and is selected |
 | `term.clear` | — | clears the output |
 
@@ -87,8 +90,7 @@ Result-line conventions (these are what the real terminal prints — copy them):
 ## Playback
 
 Keys: Space play/pause · ←/→ previous/next step · C captions · R restart · F fullscreen.
-URL: `?step=N` jumps to the end of the Nth timeline event with nonzero duration, paused
-(`&frac=0.5` for the middle of it) — N counts individual events, not storyboard beats, so prefer
-`?t=<ms>&paused=1` for QA screenshots once you know a beat's boundary time from the timeline JSON
-you wrote. `?paused=1` alone just pauses on load.
+URL: `?t=<ms>&paused=1` — the build prints one per event in `qa_urls`, so you never compute
+these by hand. `?step=N` is the Nth event with nonzero duration (an event, not a storyboard beat)
+and `&frac=0.5` pairs with it for a mid-event frame. `?paused=1` alone just pauses on load.
 `window.__demo` exposes `beats`, `total`, `seek(ms)` and `state()` for QA scripts.

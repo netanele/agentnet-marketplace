@@ -43,12 +43,13 @@
     {
       "name": "live-demo-animation",
       "source": "./live-demo-animation",
-      "description": "Turn a technical topic into an animated hands-on live demo — a local HTML file that plays inside a faithful replica of the Claude Code desktop IDE (file tree · Claude terminal / file viewer · shell), linked to the topic's deep-dive page.",
+      "description": "Turn a technical topic into an animated demo — a local HTML file next to its deep-dive page — in one of two forms chosen with the user: an IDE animation (faithful replica of the Claude Code desktop IDE: file tree · Claude terminal / file viewer · shell) or a Concept animation (RavTech-themed moving diagram of the mechanism).",
       "category": "productivity",
       "tags": [
         "claude code",
         "animation",
         "demo",
+        "explainer",
         "course"
       ]
     }

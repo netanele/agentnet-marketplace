@@ -72,6 +72,8 @@ def summarize(name, tool_input, res, is_error):
     if name == "Skill":
         return ti.get("skill") or find_arg(tool_input), "", None
     if name in ("Agent", "Task"):
+        # the stream does not carry the subagent's own tool count; the real
+        # terminal prints "Done · N tool calls" — add the count by hand if you know it
         return short(ti.get("description") or ti.get("prompt", "")), "Done", "ok"
     return find_arg(tool_input), preview(res) if res else ("Error." if is_error else ""), status
 
@@ -99,8 +101,8 @@ def main():
                 continue
 
     cwd = args.cwd
-    for o in objs:
-        if o.get("type") == "system" and o.get("cwd") and not cwd:
+    for o in objs:  # stream-json puts cwd on the system/init line; session .jsonl puts it on every record
+        if not cwd and isinstance(o.get("cwd"), str) and o["cwd"]:
             cwd = o["cwd"]
 
     def rel(a):

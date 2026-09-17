@@ -10,7 +10,7 @@ Code itself. The repo currently registers four plugins in the marketplace manife
 orchestrates multi-agent work via the `Agent`/`SendMessage`/`TaskStop` tools rather than executing
 anything itself; `session-terminal-replay`, which renders a session transcript as an HTML replay;
 `tech-deep-dive-artifact`, which writes deep technical explainer pages as local HTML files; and
-`live-demo-animation`, which builds an animated hands-on demo inside a Claude Code IDE replica. A
+`live-demo-animation`, which builds an animated demo (Claude Code IDE replica, or a concept diagram). A
 fifth plugin, `bmad-autopilot`, still lives in the repo but is unregistered from the marketplace
 (see below).
 
@@ -111,21 +111,35 @@ payloads, configs, limits, traps) as a local, RavTech-themed HTML file written t
 ### `live-demo-animation`
 
 Model-invocable skill that runs `tech-deep-dive-artifact` for the topic's facts (and its local
-deep-dive HTML), then storyboards and builds an animated live demo that plays inside a
-pixel-matched replica of the Claude Code desktop IDE (sidebar file tree · main pane that switches
-between the Claude Code terminal and a file viewer · bottom shell panel). Output is one local
-`<slug>-live-demo.html` in the project root, next to the deep-dive file it links to — not a
-published artifact. Files and command output come from a real project directory at build time.
+deep-dive HTML), then storyboards and builds an animated demo in one of two forms — it asks the
+user which (`AskUserQuestion`) unless they named one:
 
-- `assets/ide-template.html` — the IDE replica + player (play/pause/step/scrub, captions strip,
+- **IDE animation** (`<slug>-ide-animation.html`) — plays inside a pixel-matched replica of the
+  Claude Code desktop IDE (sidebar file tree · main pane that switches between the Claude Code
+  terminal and a file viewer · bottom shell). Files and command output come from a real project
+  directory at build time. The "how do I do it" form.
+- **Concept animation** (`<slug>-concept-animation.html`) — a RavTech-themed 1280×720 stage of
+  panels (config, script, session, state), highlights, arrows, payload cards, badges and a recap
+  card. The "what happens inside" form; source may be abridged but must say so.
+
+Output is a local file in the project root, next to the deep-dive file it links to — not a
+published artifact.
+
+- `assets/ide-template.html` — the IDE replica + player (play/pause/step/scrub, caption strip,
   `📄 Deep dive ↗` link, `?t=<ms>&paused=1` QA URLs). Colours/metrics were matched against real
   screenshots (`assets/reference/*.png`) — change them only against a new screenshot.
+- `assets/concept-base.html` — the concept stage + scene engine; authors edit only its
+  `<script id="conceptConfig">` block (`?step=N&noanim=1` QA URLs; config errors show as a banner).
 - `scripts/build_demo.py` — stdlib Python: timeline JSON + `--project-root` → `--out file.html`
-  (reads the real tree and files, validates events, reports `problems`).
+  (IDE form; reads the real tree and files, validates events, reports `problems`).
+- `scripts/check_concept.py` — validator for the concept form: parses the config block via node,
+  checks stage geometry, arrow endpoints, line ranges, card/line keys, the deep-dive link; prints
+  QA URLs.
 - `scripts/claude_stream_to_events.py` — converts a real `claude -p --output-format stream-json`
   run (or a session `.jsonl`) into `claude.*` timeline events in the terminal's own conventions.
-- `references/timeline-schema.md` — every event type, its fields and defaults.
-- `references/ide-look.md` — the fidelity checklist used when QA-ing screenshots.
+- `references/timeline-schema.md` — every IDE event type, its fields and defaults.
+- `references/ide-look.md` — the IDE fidelity checklist used when QA-ing screenshots.
+- `references/concept-animation.md` — the concept `CONFIG` vocabulary, layouts, truth rules, QA.
 - `evals/evals.json` — skill-creator evals.
 
 ## Working on this repo

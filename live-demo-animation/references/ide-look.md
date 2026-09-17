@@ -18,8 +18,10 @@ screenshotting, or the sidebar/status-line checks below will fail spuriously at 
 │ project       │                                                     │
 │ ⌄ ⌂ project   │ ───────────────────────────── (grey rule)           │
 │  › 📁 .claude │ ❯ [⧉ In App.tsx] █                                  │
-│  › 📁 src     │ → project [Sonnet 5 · high] ▓▓░░ 8% · Weekly (7d) …  │
-│    M↓ CLAUDE… │ ▶▶ auto mode on (shift+tab to cycle)                │
+│  › 📁 src     │ ───────────────────────────── (grey rule)           │
+│    M↓ CLAUDE… │ → project git:(main) ✗ [Fable 5.1 · high] ██▒▒ 29% · Session (5hr) 4% … │
+│               │ ▶▶ auto mode on (shift+tab to cycle)                │
+│               │ ⧉ +2 more · index · deep-dive · /artifacts to see all │
 │               ├──── cream split line ───────────────────────────────┤
 │               │ [− 14 +][+][⌄][⛶][⊠] │ ➜ project pwd               │
 │               │ >_ pwd            ×  │ /Users/…/project            │
@@ -29,25 +31,31 @@ screenshotting, or the sidebar/status-line checks below will fail spuriously at 
 
 - **Sidebar**: near-black `#0c0f14`, JetBrains Mono 12.5px, 20px rows, chevrons `›` that rotate
   when open, blue folder glyphs (special colours: `.github` orange, `node_modules` green,
-  `src` outlined, `.claude` clay), file badges by type (`M↓` blue for Markdown, `{..}` JSON,
+  `src` outlined; `.claude` is a plain blue folder like the rest), file badges by type (`M↓` blue for Markdown, `{..}` JSON,
   `</>` orange HTML, red `npm` for package files, `TS`, `⚛` for tsx, `◆` orange for .gitignore).
   Long names are cut with an ellipsis (`post-edit-check.…`); the selected file row has a grey
-  `#1f242b` band. Folders sort before files, both case-insensitively — the build script does this.
-- **A thin blue scroll thumb sits on the LEFT edge of the main pane** (`#4a7ede`), in both the
-  Claude pane and the viewer. Keep it; it is one of the tells that this is the real app.
+  `#1f242b` band; the root row carries an orange dot at its right edge when the repo is dirty.
+  Folders sort before files, both case-insensitively — the build script does this.
+- **A thin blue scroll thumb sits on the LEFT edge of the main pane** (`#4a7ede`), — visible at the
+  top of the pane in both reference shots (Claude pane and viewer). Keep it; it is one of the
+  tells that this is the real app. If a future screenshot shows it belongs to the sidebar instead,
+  move it then, not before.
 - **Claude pane**: pure black, `#e6e6e6` text. A small bordered `✻ Welcome to Claude Code` box at
   the top of a fresh session. Assistant prose starts with a `●` bullet; tool calls are
   `⏺ Name(arg)` with the name in clay `#e5645a` and the result under a `⎿` elbow in grey (a
   blocked call's result is clay); the spinner is `✻ Baking… (3s · esc to interrupt)`; a finished
   turn prints `❋ Worked for 9s · done 10:49 AM` in grey; background notices use a pink dot; the
   composer is `❯` + a cyan `[⧉ In <file>]` chip when a file is open + a green outlined block
-  cursor. The status line: `→` grey, project name cyan bold, `[model · effort]` magenta, a green
-  block bar + `8%`, `· Weekly (7d) 33% (resets 3d)`; second line `▶▶ auto mode on` yellow bold
-  + `(shift+tab to cycle)` dim yellow.
+  cursor, **bracketed by a grey rule above and below**. The status line: `→` grey, project name
+  cyan bold, `git:(main) ✗` in a repo, `[Fable 5.1 · high]` magenta, a green context bar (solid
+  fill, hatched remainder) + `29%`, `· Session (5hr) 4% (resets 3h)`; second line `▶▶ auto mode
+  on` yellow bold + `(shift+tab to cycle)` dim yellow; an optional third row `⧉ +2 more · … ·
+  /artifacts to see all` when the session has artifacts.
 - **File viewer**: cream `#f5f0e6`, a 58px right-aligned grey gutter, 19px lines, no wrapping
   (long lines run off the right edge, exactly as in the app). Syntax colours: keywords crimson
   `#c8213a`, identifiers/components purple `#6f42c1`, strings green `#3f7d2c`, comments grey
-  `#7a7a7a`. A small tab strip (`App.tsx ×`) sits on top when `meta.tabs` is on.
+  `#7a7a7a`. **No tab strip** above the file — line 1 sits flush under the pane's top edge (the
+  template only draws one if `meta.tabs:true`).
 - **Terminal panel**: black; left column 174px with the dark rounded toolbar buttons
   (`− 14 +`, `+`, `⌄`, `⛶`, `⊠`) and the tab list (`>_ name ×`, selected tab on dark blue
   `#182636`); right column is the shell: `➜` green, project name cyan bold, command green,

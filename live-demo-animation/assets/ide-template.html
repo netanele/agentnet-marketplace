@@ -43,6 +43,7 @@
   .tree::-webkit-scrollbar{width:8px}.tree::-webkit-scrollbar-thumb{background:#2a2f37;border-radius:4px}
   .row{display:flex;align-items:center;height:20px;padding-right:8px;white-space:nowrap;overflow:hidden;min-width:0;color:var(--sb-text);font-size:12.5px;cursor:default;position:relative}
   .row.sel{background:var(--sb-sel)}
+  .row .dirty{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#e8a33a;flex:0 0 7px}
   .row .chev{width:16px;flex:0 0 16px;color:var(--sb-dim);text-align:center;font-size:11px}
   .row .chev.open{transform:rotate(90deg)}
   .row .ico{width:18px;flex:0 0 18px;height:14px;margin-right:6px;display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;letter-spacing:-.02em;line-height:1;border-radius:2px}
@@ -53,7 +54,6 @@
   .ico-folder.npm{background:#7cbf4a}.ico-folder.npm::before{background:#7cbf4a}
   .ico-folder.src{background:transparent;border:1.5px solid #9aa4b2;height:12px}.ico-folder.src::before{display:none}
   .ico-folder.styles{background:#7bc86c}.ico-folder.styles::before{background:#7bc86c}
-  .ico-folder.claude{background:#d97757}.ico-folder.claude::before{background:#d97757}
   .ico-root{color:var(--root-icon);border:1.5px solid var(--root-icon);border-radius:3px;width:16px!important;height:13px;font-size:8px}
   .ico-md{background:#3b82f6;color:#fff}.ico-json{color:#e8e8e8;font-size:10px}.ico-html{color:#e8853a;font-size:11px}
   .ico-npm{background:#cb3837;color:#fff;font-size:7.5px}.ico-ts{color:#3b82f6;font-size:11px}.ico-tsx{color:#3fc5e8;font-size:13px}
@@ -109,7 +109,8 @@
   .cc-status .arrow{color:var(--cc-dim);margin-right:8px}
   .cc-status .proj{color:var(--cc-cyan);font-weight:700}
   .cc-status .model{color:var(--cc-magenta)}
-  .cc-status .bar{color:var(--cc-green);letter-spacing:-.5px}.cc-status .bar .e{color:#1f3d25}
+  .cc-status .barbox{display:inline-block;width:112px;height:12px;vertical-align:-1px;background:repeating-linear-gradient(135deg,#1f3d25 0 2px,#0c1a10 2px 4px);border-radius:1px;overflow:hidden}.cc-status .barbox .fill{display:block;height:100%;background:var(--cc-green)}
+  .cc-status .arow{color:var(--cc-dim)}
   .cc-status .pct{color:var(--cc-green)}
   .cc-status .mode{color:var(--cc-yellow);font-weight:700}.cc-status .modehint{color:#a88b3a}
 
@@ -161,7 +162,7 @@
   /* caption strip — sits between the IDE and the controls so it never covers the app */
   .caption{flex:0 0 auto;min-height:38px;display:flex;align-items:center;justify-content:center;text-align:center;padding:7px 18px;background:#0e2138;color:#fff;font-family:Heebo,system-ui,sans-serif;font-size:15px;line-height:1.35;border-top:1px solid #1e4d8b;transition:opacity 200ms}
   .caption.off{display:none}
-  .caption:empty::before{content:"\00a0"}
+  .caption > span:empty::before{content:"\00a0"}
   .caption b{color:var(--ctl-accent)}
   .caption code{font-family:var(--mono);font-size:13.5px;color:#dce6f1;background:rgba(255,255,255,.08);padding:0 5px;border-radius:4px}
 
@@ -200,6 +201,7 @@
           <div class="cc-bottom">
             <div class="cc-hr"></div>
             <div class="cc-input" id="ccInput"></div>
+            <div class="cc-hr" style="margin-top:10px"></div>
             <div class="cc-status" id="ccStatus"></div>
           </div>
         </div>
@@ -225,7 +227,7 @@
     </div>
     <svg class="pointer" id="pointer" viewBox="0 0 18 24"><path d="M2 1 L2 19 L6.6 14.8 L9.6 22 L12.6 20.8 L9.7 13.8 L16 13.8 Z" fill="#fff" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/></svg>
   </div>
-  <div class="caption" id="caption"></div>
+  <div class="caption" id="caption"><span id="captionText"></span></div>
   <div class="controls">
     <button id="playBtn" type="button" aria-label="Pause">⏸</button>
     <button id="backBtn" type="button" title="Previous step (←)">◀</button>
@@ -245,9 +247,9 @@
 "use strict";
 var D = JSON.parse(document.getElementById('demoData').textContent);
 var META = D.meta || {}, TREE = D.tree || [], FILES = D.files || {}, EVENTS = D.events || [];
-var TABS = META.tabs !== false;
+var TABS = META.tabs === true;
 
-function esc(s){return String(s==null?'':s).replace(/[&<>]/g,function(c){return c==='&'?'&amp;':c==='<'?'&lt;':'&gt;';});}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return c==='&'?'&amp;':c==='<'?'&lt;':c==='>'?'&gt;':c==='"'?'&quot;':'&#39;';});}
 function $(id){return document.getElementById(id);}
 
 /* ── markdown-lite for Claude's prose (bold, code, italics, headings) ── */
@@ -327,7 +329,7 @@ function hlLine(line, lang){
 function iconFor(node){
   if(node.kind==='dir'){
     var cls='ico-folder'; var nm=node.name;
-    if(nm==='.github') cls+=' git'; else if(nm==='node_modules') cls+=' npm'; else if(nm==='src') cls+=' src'; else if(nm==='styles') cls+=' styles'; else if(nm==='.claude') cls+=' claude';
+    if(nm==='.github') cls+=' git'; else if(nm==='node_modules') cls+=' npm'; else if(nm==='src') cls+=' src'; else if(nm==='styles') cls+=' styles';
     return '<span class="ico '+cls+'"></span>';
   }
   var n=node.name.toLowerCase(), e=n.split('.').pop();
@@ -350,7 +352,9 @@ function iconFor(node){
 
 /* ── state ──────────────────────────────────────────────────────────── */
 var S; // rebuilt from scratch on reset()
+function hash(str){ var h=5381; for(var i=0;i<str.length;i++) h=((h<<5)+h+str.charCodeAt(i))|0; return (h>>>0).toString(36); }
 function reset(){
+  if(typeof vwBody!=='undefined'&&vwBody) vwBody.dataset.path='';
   S={expanded:{}, selected:null, openFile:null, fileScroll:0, hl:null,
      ccEvents:[], spinner:null, input:'', chipFile:null,
      termTabs:[{name:META.terminalTab||'zsh'}], termSel:0, termLines:[], termTyping:null,
@@ -384,7 +388,7 @@ function findNode(path){
   return node;
 }
 function renderTree(){
-  var html='<div class="row" data-path=""><span class="chev open">›</span><span class="ico ico-root">⌂</span><span class="nm">'+esc(META.project||'project')+'</span></div>';
+  var html='<div class="row" data-path=""><span class="chev open">›</span><span class="ico ico-root">⌂</span><span class="nm">'+esc(META.project||'project')+'</span>'+(META.gitDirty!==false&&META.gitBranch?'<span class="dirty"></span>':'')+'</div>';
   function walk(nodes, depth, prefix){
     nodes.forEach(function(n){
       var p=prefix?prefix+'/'+n.name:n.name, isDir=n.kind==='dir', open=!!S.expanded[p];
@@ -400,10 +404,11 @@ function renderViewer(){
   if(!S.openFile){ vw.hidden=true; cc.hidden=false; return; }
   vw.hidden=false; cc.hidden=true;
   var path=S.openFile, content=S.fileOverrides[path]!=null?S.fileOverrides[path]:(FILES[path]||''), lang=langOf(path);
-  if(vwBody.dataset.path!==path+'\n'+content.length){
+  var vkey=path+'\n'+content.length+'\n'+hash(content);
+  if(vwBody.dataset.path!==vkey){
     var lines=content.replace(/\n$/,'').split('\n'), html='';
     for(var i=0;i<lines.length;i++) html+='<div class="vw-line" data-ln="'+(i+1)+'"><span class="ln">'+(i+1)+'</span><span class="code">'+hlLine(lines[i],lang)+'</span></div>';
-    vwBody.innerHTML=html; vwBody.dataset.path=path+'\n'+content.length;
+    vwBody.innerHTML=html; vwBody.dataset.path=vkey;
     vwTabs.innerHTML=TABS?'<div class="vw-tab" id="vwTab"><span>'+esc(path.split('/').pop())+'</span><span class="x">×</span></div>':'';
     vwTabs.style.display=TABS?'':'none';
   }
@@ -413,7 +418,7 @@ function renderViewer(){
 function renderCC(){
   var html='';
   if(META.welcome!==false){
-    html+='<div class="cc-ev cc-welcome"><span class="star">✻</span> Welcome to <b>Claude Code</b>'+(META.version?' <span class="dim">v'+esc(META.version)+'</span>':'')+'\n  <span class="dim">'+esc(META.model||'Sonnet 5')+(META.plan?' · '+esc(META.plan):'')+'</span>\n  <span class="dim">'+esc(META.cwd||('~/'+(META.project||'project')))+'</span></div>';
+    html+='<div class="cc-ev cc-welcome"><span class="star">✻</span> Welcome to <b>Claude Code</b>'+(META.version?' <span class="dim">v'+esc(META.version)+'</span>':'')+'\n  <span class="dim">'+esc(META.model||'Fable 5.1')+(META.plan?' · '+esc(META.plan):'')+'</span>\n  <span class="dim">'+esc(META.cwd||('~/'+(META.project||'project')))+'</span></div>';
   }
   S.ccEvents.forEach(function(e){
     if(e.kind==='human') html+='<div class="cc-ev cc-human"><span class="chev">❯</span>'+esc(e.text)+'</div>';
@@ -437,9 +442,10 @@ function renderCC(){
   ccScroll.scrollTop=ccScroll.scrollHeight;
   var chip=S.chipFile?'<span class="chip">[⧉ In '+esc(S.chipFile.split('/').pop())+']</span>':'';
   ccInput.innerHTML='<span class="p">❯</span>'+chip+esc(S.input)+'<span class="cc-cursor'+(S.spinner?' off':'')+'"></span>';
-  var pct=META.contextPct!=null?META.contextPct:8, weekly=META.weeklyPct!=null?META.weeklyPct:33, filled=Math.max(1,Math.round(pct/10));
-  var bar=''; for(var i=0;i<10;i++) bar+= i<filled?'▓':'<span class="e">▓</span>';
-  ccStatus.innerHTML='<span class="arrow">→</span><span class="proj">'+esc(META.project||'project')+'</span>'+(META.gitBranch?' <span class="gb">git:(</span><span class="gbn">'+esc(META.gitBranch)+'</span><span class="gb">)</span>'+(META.gitDirty!==false?' <span class="gx">✗</span>':''):'')+' <span class="model">['+esc(META.model||'Sonnet 5')+' · '+esc(META.effort||'high')+']</span> <span class="bar">'+bar+'</span> <span class="pct">'+pct+'%</span> · Weekly (7d) <span class="pct">'+weekly+'%</span> (resets '+esc(META.resets||'3d')+')\n<span class="mode">▶▶ '+esc(META.mode||'auto mode on')+'</span> <span class="modehint">(shift+tab to cycle)</span>';
+  var pct=META.contextPct!=null?META.contextPct:29;
+  var limitLabel=META.limitLabel||(META.weeklyPct!=null?'Weekly (7d)':'Session (5hr)'), limitPct=META.sessionPct!=null?META.sessionPct:(META.weeklyPct!=null?META.weeklyPct:4);
+  var bar='<span class="barbox"><span class="fill" style="width:'+Math.max(2,Math.min(100,pct))+'%"></span></span>';
+  ccStatus.innerHTML='<span class="arrow">→</span><span class="proj">'+esc(META.project||'project')+'</span>'+(META.gitBranch?' <span class="gb">git:(</span><span class="gbn">'+esc(META.gitBranch)+'</span><span class="gb">)</span>'+(META.gitDirty!==false?' <span class="gx">✗</span>':''):'')+' <span class="model">['+esc(META.model||'Fable 5.1')+' · '+esc(META.effort||'high')+']</span> '+bar+' <span class="pct">'+pct+'%</span> · '+esc(limitLabel)+' <span class="pct">'+limitPct+'%</span> (resets '+esc(META.resets||'3h')+')\n<span class="mode">▶▶ '+esc(META.mode||'auto mode on')+'</span> <span class="modehint">(shift+tab to cycle)</span>'+(META.artifactsRow?'\n<span class="arow">⧉ '+esc(META.artifactsRow)+'</span>':'');
 }
 function renderTerm(){
   var th=''; S.termTabs.forEach(function(t,i){ th+='<div class="tp-tab'+(i===S.termSel?' sel':'')+'"><span class="ti">&gt;_</span><span class="tn">'+esc(t.name)+'</span><span class="tx">×</span></div>'; });
@@ -454,7 +460,7 @@ function renderTerm(){
   tpOut.innerHTML=html; tpRight.scrollTop=tpRight.scrollHeight;
 }
 function gitSeg(){ if(!META.gitBranch) return ''; return '</span><span class="gb">git:(</span><span class="gbn">'+esc(META.gitBranch)+'</span><span class="gb">)</span>'+(META.gitDirty!==false?' <span class="gx">✗</span>':'')+'<span class="sp8">'; }
-function renderCaption(){ capEl.textContent=''; capEl.innerHTML=S.caption?inlineCap(S.caption):''; }
+function renderCaption(){ var ct=$('captionText'); ct.innerHTML=S.caption?inlineCap(S.caption):''; }
 function inlineCap(s){ return esc(s).replace(/\*\*([^*]+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+?)`/g,'<code>$1</code>'); }
 function renderPointer(){
   if(S.pointerHidden||!S.pointer){ ptr.classList.add('hidden'); return; }
@@ -498,9 +504,7 @@ var TL=[]; (function(){ var t=0; EVENTS.forEach(function(ev,i){ var d=durationOf
    side-effects are guarded by per-event flags (S._tools, S._sentFor, …) so
    that forward play applies them once; backward scrubbing goes through
    reset()+replay. */
-function jitter(len, f, seed){ // human typing: chars revealed non-linearly
-  var n=Math.floor(len*f); return n;
-}
+function typed(len, f){ return Math.floor(len*f); } // characters revealed so far (linear; the per-char jitter is in TYPE_MS)
 function apply(item, f){
   var ev=item.ev, i=item.i;
   switch(ev.t){
@@ -519,8 +523,8 @@ function apply(item, f){
       else if(S.openFile!==ev.path){ click(); S.selected=ev.path; S.openFile=ev.path; S.chipFile=ev.path; S.hl=null; S.fileScroll=ev.line||1; needScroll=ev.line||1; }
       break; }
     case 'file.close': {
-      if(f<0.5){ S.pointerHidden=false; S.pointer={sel:'#vwTab .x', dx:4}; }
-      else if(S.openFile){ click(); S.openFile=null; S.selected=null; }
+      if(TABS && f<0.5){ S.pointerHidden=false; S.pointer={sel:'#vwTab .x', dx:4}; }
+      else if(S.openFile){ if(TABS) click(); S.openFile=null; S.selected=null; }
       break; }
     case 'claude.show': { S.openFile=null; S.selected=null; break; }
     case 'file.scroll': { needScroll=ev.line; S.fileScroll=ev.line; break; }
@@ -529,7 +533,7 @@ function apply(item, f){
     case 'claude.type': {
       if(S.openFile && !ev.keepFile){ S.openFile=null; S.selected=null; }
       S.pointerHidden=true;
-      var n=jitter(ev.text.length, Math.min(1,f/0.86));
+      var n=typed(ev.text.length, Math.min(1,f/0.86));
       if(f<0.97){ S.input=ev.text.slice(0,n); }
       else { S.input=''; if(!S._sentFor||S._sentFor!==i){ S.ccEvents.push({kind:'human',text:ev.text}); S._sentFor=i; } }
       break; }
@@ -556,9 +560,9 @@ function apply(item, f){
       break; }
     case 'term.clear': { S.termLines=[]; break; }
     case 'term.cmd': {
-      var cmd=ev.cmd||'', typeShare=(400+cmd.length*(TYPE_MS+8))/item.dur, enterShare=350/item.dur;
+      var cmd=ev.cmd||'', typeMs=400+cmd.length*(TYPE_MS+8), nominal=typeMs+350+outLines(ev)*70, typeShare=typeMs/nominal, enterShare=350/nominal;
       if(f<0.02){ S.pointerHidden=false; S.pointer={sel:'#tpRight',dx:120}; S.focusTerm=true; }
-      if(f<typeShare){ var ff=Math.max(0,(f*item.dur-400))/(cmd.length*(TYPE_MS+8)); S.termTyping=cmd.slice(0,Math.floor(cmd.length*Math.min(1,ff))); S.pointerHidden=f>0.15; }
+      if(f<typeShare){ var ff=Math.max(0,(f*nominal-400))/Math.max(1,cmd.length*(TYPE_MS+8)); S.termTyping=cmd.slice(0,Math.floor(cmd.length*Math.min(1,ff))); S.pointerHidden=f>0.15; }
       else { S.termTyping=null; S.pointerHidden=true;
         var lines=ev.out==null?[]:String(ev.out).split('\n'); var show= f<typeShare+enterShare?0:Math.round((f-typeShare-enterShare)/(1-typeShare-enterShare)*lines.length);
         var rec3=S._tc&&S._tc[i]; if(!rec3){ rec3={cmd:{kind:'cmd',text:cmd},outs:[]}; S._tc=S._tc||{}; S._tc[i]=rec3; S.termLines.push(rec3.cmd); }
