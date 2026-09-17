@@ -1,13 +1,14 @@
 ---
 name: tech-deep-dive-artifact
-description: Build a published, RavTech-themed HTML artifact that explains a list of technical topics at real engineering depth — exact field names, real payloads, config files, limits, and the traps — instead of a shallow overview. Use this whenever the user hands over a list or cluster of technical subjects and wants them explained, documented, taught, or turned into a reference/explainer/cheat-sheet/one-pager/artifact/page, including phrasings like "explain these concepts", "make me an artifact about X, Y and Z", "write up a technical deep dive on…", "build a reference page for…", or "turn this into course material" — even when they never say "artifact". Also use it when they point at an existing deck slide, doc or transcript and ask for a deeper standalone page out of it.
+description: Build a local, RavTech-themed HTML file (written to the project root, not published) that explains a list of technical topics at real engineering depth — exact field names, real payloads, config files, limits, and the traps — instead of a shallow overview. Use this whenever the user hands over a list or cluster of technical subjects and wants them explained, documented, taught, or turned into a reference/explainer/cheat-sheet/one-pager/artifact/page, including phrasings like "explain these concepts", "make me an artifact about X, Y and Z", "write up a technical deep dive on…", "build a reference page for…", or "turn this into course material" — even when they never say "artifact". Also use it when they point at an existing deck slide, doc or transcript and ask for a deeper standalone page out of it.
 ---
 
 # Technical deep-dive artifact
 
 ## What this produces
 
-One published Artifact: a scrolling, English, RavTech-themed reference page that covers every
+One local HTML file, written to the root of the project's working directory (not published as an
+Artifact): a scrolling, English, RavTech-themed reference page that covers every
 requested topic at the depth an engineer needs to actually *do* the thing — real key names, real
 payloads, real commands, the limits, and the traps — not a marketing overview.
 
@@ -108,7 +109,7 @@ component this skill uses (panels, code blocks with syntax spans, tables, tabs, 
 callouts). Start from it and fill it in. Read `references/components.md` for the copy-paste markup of
 each component and the rules that keep it from breaking.
 
-Non-negotiables inherited from the RavTech decks and the artifact platform:
+Non-negotiables inherited from the RavTech decks and standard artifact-design conventions:
 
 - **Palette:** navy `#0a1f3d` · blue `#1e4d8b` · cyan `#00c8ff` · orange `#ff7a00`, greys
   `#51637c`/`#7c8aa3`, red `#dc4b3e` for warnings. **Fonts:** Rubik (headings), Heebo (body),
@@ -121,27 +122,27 @@ Non-negotiables inherited from the RavTech decks and the artifact platform:
 - **Everything readable at rest** — no scroll-triggered reveals, nothing parked at `opacity:0`.
 - Side gutter ≥16px, stacks cleanly at ~400px, wide tables/code scroll in their own container.
 
-Write the file to your scratchpad directory, not into the user's repo, unless they asked for a file
-in the project.
+Write the file directly into the root of the project's working directory (the directory this skill
+is run from) — a specific, descriptive filename (e.g. `hooks-and-mcp-deep-dive.html`), not into the
+scratchpad and not published anywhere. `ravtech-base.html` is already a complete standalone document
+(`<!doctype>`, `<html>`, `<head>` with charset/viewport, `<body>`) — just fill in its `<title>`,
+masthead, TOC, sections and footer.
 
-### 5. Look once, fix, publish
+### 5. Look once, fix
 
 Take **one** screenshot of the local file (serve it over HTTP — `file://` is blocked by the
 Playwright CLI — then `npx playwright-cli navigate` + `screenshot --full-page`). Slice a tall page
 into parts and read the slices that cover the sections the user cared about most, not just the top.
-Fix what it shows in one pass, then publish with the Artifact tool: a specific two-to-four-word
-`<title>`, one emoji favicon, and a one-sentence description.
+Fix what it shows in one pass.
 
 Mojibake in a local screenshot (`â€"`, `Â·`) is almost always the local server sending no charset —
 check the file with `grep -c 'â€' file.html` before "fixing" anything. Zero hits means the bytes are
-fine and the published page will be fine: the publish skeleton supplies `<!doctype>`, charset and
-viewport, which is exactly why the base file starts at `<title>`. Don't add a charset meta to
-"fix" a preview artifact.
+fine; don't add a second charset meta on top of the one already in the file.
 
 ### 6. Hand it over
 
-Give the link, then a short list of what's in it, then — importantly — **the claims you could not
-verify**. Do not bury that.
+Give the local file path, then a short list of what's in it, then — importantly — **the claims you
+could not verify**. Do not bury that.
 
 ## Writing the prose
 

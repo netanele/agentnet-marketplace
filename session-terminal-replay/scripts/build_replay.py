@@ -22,7 +22,7 @@ def escape_html(s):
     return (s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
              .replace('"', "&quot;"))
 
-MAX_CHUNK_BYTES = 12 * 1024 * 1024  # stay well under the 16MB per-file artifact cap
+MAX_CHUNK_BYTES = 12 * 1024 * 1024  # keep each data file to a manageable size
 RESULT_PREVIEW_LINES = 8
 ARG_MAX = 100
 

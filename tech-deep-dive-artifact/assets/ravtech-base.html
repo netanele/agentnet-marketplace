@@ -4,9 +4,14 @@
    2. replace the demo <section>s with your topics (keep the ids in sync across .jump and .toc)
    3. keep the :root / dark-mode token blocks exactly as they are — they handle all three
       viewer states (explicit light, explicit dark, un-stamped system default)
-  The publish skeleton supplies <!doctype>, charset, viewport and safe-area padding, so this file
-  starts at <title> and contains no <html>/<head>/<body> tags.
+  This file is written directly to disk (not published through the Artifact tool), so it is a
+  complete standalone document: <!doctype>, <html>, <head> with charset/viewport, and <body>.
 -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Page Name Here</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -180,6 +185,8 @@ td code{white-space:nowrap}
 footer{border-top:1px solid var(--border);padding-block:24px 40px;color:var(--text-muted);font-size:13.5px}
 footer .wrap{display:flex;flex-direction:column;gap:6px}
 </style>
+</head>
+<body>
 
 <header class="masthead">
   <div class="wrap">
@@ -284,3 +291,5 @@ document.querySelectorAll('.tabs').forEach(function(group){
   });
 });
 </script>
+</body>
+</html>

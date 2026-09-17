@@ -19,23 +19,23 @@
     {
       "name": "session-terminal-replay",
       "source": "./session-terminal-replay",
-      "description": "Turn the current Claude Code session (and its subagents) into an animated terminal-replay HTML artifact.",
+      "description": "Turn the current Claude Code session (and its subagents) into an animated terminal-replay HTML file.",
       "category": "productivity",
       "tags": [
         "claude code",
         "replay",
-        "artifact",
+        "html",
         "transcript"
       ]
     },
     {
       "name": "tech-deep-dive-artifact",
       "source": "./tech-deep-dive-artifact",
-      "description": "Build a RavTech-themed HTML artifact that explains a list of technical topics at real engineering depth.",
+      "description": "Build a RavTech-themed HTML file that explains a list of technical topics at real engineering depth.",
       "category": "productivity",
       "tags": [
         "claude code",
-        "artifact",
+        "html",
         "documentation",
         "explainer"
       ]

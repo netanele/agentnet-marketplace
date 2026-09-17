@@ -9,8 +9,9 @@ build, lint, or test tooling; its "source code" is Markdown skill definitions co
 Code itself. The repo currently registers three plugins in the marketplace manifest: `planex`, which
 orchestrates multi-agent work via the `Agent`/`SendMessage`/`TaskStop` tools rather than executing
 anything itself; `session-terminal-replay`, which renders a session transcript as an HTML replay;
-and `tech-deep-dive-artifact`, which publishes deep technical explainer pages. A fourth plugin, `bmad-autopilot`, still lives in the repo but is unregistered from the
-marketplace (see below).
+and `tech-deep-dive-artifact`, which writes deep technical explainer pages as local HTML files. A
+fourth plugin, `bmad-autopilot`, still lives in the repo but is unregistered from the marketplace
+(see below).
 
 ## Structure
 
@@ -90,18 +91,19 @@ explicit invocation only (`disable-model-invocation: true`). Mode is detected fr
 ### `session-terminal-replay`
 
 Model-invocable skill that reads the current session's JSONL transcript (plus each subagent's
-`agent-<id>.jsonl`) from `~/.claude/projects/<slug>/` and publishes an animated terminal replay as
-an Artifact. It shows only what the real terminal shows (no raw tool JSON or harness plumbing).
+`agent-<id>.jsonl`) from `~/.claude/projects/<slug>/` and writes an animated terminal replay into a
+`session-replay/` folder in the project root. It shows only what the real terminal shows (no raw
+tool JSON or harness plumbing).
 
 - `scripts/build_replay.py` — stdlib-only Python: finds, parses, and renders the transcript.
 - `assets/replay-template.html` — the player template the script fills in.
 
 ### `tech-deep-dive-artifact`
 
-Model-invocable skill that turns a list of technical topics into a published, RavTech-themed HTML
-Artifact explained at engineering depth (real fields, payloads, configs, limits, traps).
+Model-invocable skill that explains a list of technical topics at engineering depth (real fields,
+payloads, configs, limits, traps) as a local, RavTech-themed HTML file written to the project root.
 
-- `assets/ravtech-base.html` — the themed page shell the artifact is built on.
+- `assets/ravtech-base.html` — the themed page shell the file is built on.
 - `references/components.md` — the component patterns to use inside that shell.
 - `evals/evals.json` — skill-creator evals for the skill.
 

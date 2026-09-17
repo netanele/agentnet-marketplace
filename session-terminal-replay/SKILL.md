@@ -1,6 +1,6 @@
 ---
 name: session-terminal-replay
-description: Turns the CURRENT Claude Code session's on-disk transcript into a self-contained, animated terminal-replay HTML artifact — reproducing only what a real Claude Code terminal actually shows a user (messages, short per-tool result lines like "Read 42 lines" or "Updated (+3 -1 lines)", never raw tool-call JSON or harness/system plumbing), with play/pause, speed, and scrub controls. Every subagent it spawned gets its own switchable pane, exactly like switching to view a spawned agent's own session in the real product. Use this whenever the user asks to turn "this conversation", "this session", "what we just did", or "this chat" into a replay, recording, demo, animation, video, or terminal recreation — including phrasings like "make a video of this session", "show this as a Claude Code recording", "animate our conversation", or "create an artifact that plays back everything we did" — even if they never say "transcript", "JSONL", or name this skill directly. Always reach for this instead of hand-reconstructing the conversation from your own context: your context can be compacted or summarized as the session grows, but this skill reads the real on-disk session log, so nothing gets lost or invented, no matter how long the session or its subagents ran.
+description: Turns the CURRENT Claude Code session's on-disk transcript into a self-contained, animated terminal-replay HTML file (written locally, not published) — reproducing only what a real Claude Code terminal actually shows a user (messages, short per-tool result lines like "Read 42 lines" or "Updated (+3 -1 lines)", never raw tool-call JSON or harness/system plumbing), with play/pause, speed, and scrub controls. Every subagent it spawned gets its own switchable pane, exactly like switching to view a spawned agent's own session in the real product. Use this whenever the user asks to turn "this conversation", "this session", "what we just did", or "this chat" into a replay, recording, demo, animation, video, or terminal recreation — including phrasings like "make a video of this session", "show this as a Claude Code recording", "animate our conversation", or "create an artifact that plays back everything we did" — even if they never say "transcript", "JSONL", or name this skill directly. Always reach for this instead of hand-reconstructing the conversation from your own context: your context can be compacted or summarized as the session grows, but this skill reads the real on-disk session log, so nothing gets lost or invented, no matter how long the session or its subagents ran.
 ---
 
 # Session terminal replay
@@ -74,15 +74,18 @@ button snaps back to auto-follow.
    wrong with more than one Claude Code window open on the same project —
    flag that to the user if it happens).
 
-2. **Run the build script**, writing output into your scratchpad directory
-   (the Artifact tool requires files to live under the working directory or
-   the scratchpad):
+2. **Run the build script**, writing output into a `session-replay/` folder
+   in the root of the project's working directory (the directory this skill
+   is run from) — not the scratchpad, and not published anywhere. Keep
+   `index.html` and its `data_files` together in that folder: the page loads
+   the data files as relative `<script src>` tags, so moving `index.html`
+   alone breaks the replay.
 
    ```bash
    python3 <this-skill-dir>/scripts/build_replay.py \
      --cwd "<the project's working directory>" \
      --session-id "<session-id-from-step-1>" \
-     --out-dir "<scratchpad>/session-replay"
+     --out-dir "<the project's working directory>/session-replay"
    ```
 
    It prints a JSON summary: `event_count`, `data_files`, `html_file`, and
@@ -93,17 +96,14 @@ button snaps back to auto-follow.
    without its own pane to switch into. Mention this to the user rather than
    silently under-delivering.
 
-3. **Publish with the Artifact tool.** `file_path` is the generated
-   `index.html`; pass every name in `data_files` through the `files`
-   parameter, mapped to itself (there's more than one part file only for
-   extremely long sessions). Use `favicon: "🖥️"`, `icon: "terminal"`, and a
-   one-sentence `description`. Don't proactively share it further — artifacts
-   publish private by default, and this one reflects the real session's
-   content.
+3. **Leave it as local files — do not publish.** `html_file` and the
+   `data_files` it references stay on disk under `session-replay/` in the
+   project root. Open `html_file` directly in a browser to view it (a plain
+   `file://` open is fine here; no server or Artifact tool involved).
 
-4. **Report back concisely**: the link, the event count, and any caveat from
-   step 2. Don't re-narrate the session in chat — the artifact is the
-   deliverable.
+4. **Report back concisely**: the local path to `html_file`, the event
+   count, and any caveat from step 2. Don't re-narrate the session in chat —
+   the file is the deliverable.
 
 ## Regenerating for a different session
 
